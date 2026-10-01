@@ -1,0 +1,18 @@
+fastapi==0.142.2
+uvicorn[standard]==0.54.0
+SQLAlchemy==2.1.1
+pydantic-settings==2.15.0
+email-validator==2.3.0
+PyJWT==2.15.1
+bcrypt==5.0.0
+python-multipart==0.0.32
+pillow==12.3.0
+numpy==2.5.3
+boto3==1.43.106
+anthropic==1.11.0
+# Postgres(Neon) 사용 시: psycopg[binary]
+# 얼굴 블러 사용 시: opencv-python-headless
+
+# dev
+pytest==9.1.1
+httpx==0.28.1
