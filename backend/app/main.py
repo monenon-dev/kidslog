@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from . import models  # noqa: F401  (테이블 등록)
 from .config import get_settings
 from .db import Base, engine
-from .routers import auth, classes, groups, local_storage, photos
+from .routers import auth, classes, groups, local_storage, me, photos
 
 logging.basicConfig(level=logging.INFO)
 
@@ -29,6 +29,7 @@ app.include_router(classes.router)
 app.include_router(photos.router)
 app.include_router(groups.router)
 app.include_router(local_storage.router)
+app.include_router(me.router)
 
 
 @app.get("/health")

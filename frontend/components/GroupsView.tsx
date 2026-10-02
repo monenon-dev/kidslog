@@ -3,6 +3,7 @@
 import { ArrowLeft, TriangleAlert } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { loadPrefs } from "@/lib/prefs";
 import type { Group, GroupDetail, Klass, Note } from "@/lib/types";
 import { flagReasons } from "./Gallery";
 
@@ -73,6 +74,7 @@ function GroupDetailView({ groupId, klass, onBack }: { groupId: number; klass: K
   const [error, setError] = useState<string | null>(null);
   const [memo, setMemo] = useState("");
   const [tone, setTone] = useState<"warm" | "concise">("warm");
+  useEffect(() => void loadPrefs().then((p) => setTone(p.ai_tone)), []);
   const [generating, setGenerating] = useState(false);
   const [note, setNote] = useState<Note | null>(null);
   const [template, setTemplate] = useState("grid4");

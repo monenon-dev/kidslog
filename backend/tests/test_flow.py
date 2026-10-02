@@ -109,6 +109,28 @@ def test_full_flow():
     assert counts == {"가온": (3, False), "나래": (1, False), "다온": (0, True)}
     assert bal["untagged_photos"] == 0
 
+    # 알림: 분석이 끝나면 반마다 한 번 묶어서
+    nl = client.get("/notifications", headers=h).json()
+    done = [n for n in nl["items"] if n["kind"] == "analysis"]
+    assert len(done) == 1 and "3장" in done[0]["body"] and nl["unread"] >= 1
+    # 이번 주 사진이 적은 아이 (다온 0장)
+    low = [n for n in nl["items"] if n["kind"] == "low_photos"]
+    assert len(low) == 1 and "다온" in low[0]["body"]
+    client.post(f"/notifications/{done[0]['id']}/read", headers=h)
+    client.post("/notifications/read-all", headers=h)
+    assert client.get("/notifications", headers=h).json()["unread"] == 0
+
+    # 설정: '적음' 기준을 낮추면 균형 표시도 바뀐다
+    st = client.get("/settings", headers=h).json()
+    assert st["balance_ratio"] == 0.7 and st["notify"]["analysis"] is True
+    st["balance_ratio"] = 0.3
+    st["video_defaults"]["color"] = "#FFE066"
+    assert client.put("/settings", json=st, headers=h).status_code == 200
+    assert client.get("/settings", headers=h).json()["video_defaults"]["color"] == "#FFE066"
+    bal = client.get(f"/classes/{k['id']}/balance", headers=h).json()
+    assert {r["name"]: r["low"] for r in bal["rows"]}["나래"] is False
+    assert client.put("/settings", json={**st, "photo_retention_days": 45}, headers=h).status_code == 422
+
     # 자동 묶음
     groups = client.post("/groups/auto", json={"class_id": k["id"]}, headers=h).json()
     assert {g["activity"] for g in groups} == {"바깥놀이", "미술"}
@@ -188,6 +210,68 @@ def test_full_flow():
     assert client.get("/video-draft", headers=h2).json()["data"] is None
     assert client.post("/video-subtitles", json={"memo": "x", "count": 1, "class_id": k["id"]}, headers=h2).status_code == 404
 
+    # 브라우저에서만 아는 문제는 하루 한 번만 알림
+    client.post("/notifications/client", json={"event": "storage_full", "link": "/video"}, headers=h)
+    client.post("/notifications/client", json={"event": "storage_full", "link": "/video"}, headers=h)
+    assert len([n for n in client.get("/notifications", headers=h).json()["items"] if n["kind"] == "storage"]) == 1
+    # 알림을 끄면 만들지 않는다
+    st = client.get("/settings", headers=h).json()
+    st["notify"]["storage"] = False
+    client.put("/settings", json=st, headers=h)
+    client.post("/notifications/client", json={"event": "draft_failed"}, headers=h)
+    assert len([n for n in client.get("/notifications", headers=h).json()["items"] if n["kind"] == "storage"]) == 1
+
     # 삭제
     assert client.delete(f"/photos/{ids[0]}", headers=h).status_code == 204
     assert client.get(f"/photos/{ids[1]}", headers=h).json()["duplicate_of"] is None
+
+
+def test_retention_and_account_delete():
+    from datetime import datetime, timedelta, timezone
+
+    from app import models
+    from app.db import SessionLocal
+
+    r = client.post("/auth/signup", json={"email": "keep@example.com", "password": "password123", "name": "보관"})
+    h = {"Authorization": f"Bearer {r.json()['access_token']}"}
+    k = client.post("/classes", json={"name": "보관반"}, headers=h).json()
+    files = [_sharp_green(), _blurry_colorful()]
+    pres = client.post(
+        "/photos/presign",
+        json={"class_id": k["id"], "files": [{"filename": f"{i}.jpg", "content_type": "image/jpeg", "size": len(b)} for i, b in enumerate(files)]},
+        headers=h,
+    ).json()
+    for p, data in zip(pres, files):
+        client.put(p["upload_url"], content=data, headers={"Content-Type": "image/jpeg"})
+    ids = [p["photo_id"] for p in pres]
+    client.post("/photos/complete", json={"photo_ids": ids}, headers=h)
+
+    # 한 장을 100일 전 사진으로 만들고 보관 기간 90일 → 바로 지워진다
+    with SessionLocal() as db:
+        old = db.get(models.Photo, ids[0])
+        old.created_at = datetime.now(timezone.utc) - timedelta(days=100)
+        old_thumb = old.thumb_key
+        db.commit()
+    st = client.get("/settings", headers=h).json()
+    assert client.put("/settings", json={**st, "photo_retention_days": 90}, headers=h).status_code == 200
+    assert client.get(f"/photos?class_id={k['id']}", headers=h).json()["total"] == 1
+    assert any(n["kind"] == "retention" for n in client.get("/notifications", headers=h).json()["items"])
+    from app.storage import get_storage
+
+    assert not get_storage().exists(old_thumb)
+
+    # AI를 끄면 문구도 규칙 기반
+    st = client.get("/settings", headers=h).json()
+    client.put("/settings", json={**st, "ai_enabled": False}, headers=h)
+    sub = client.post("/video-subtitles", json={"memo": "숲 산책", "count": 1}, headers=h).json()
+    assert sub["provider"] == "mock"
+
+    # 계정 삭제: 비밀번호 확인 후 반·사진·파일까지
+    with SessionLocal() as db:
+        keys = [k for p in db.query(models.Photo).filter(models.Photo.class_id == k["id"]) for k in (p.storage_key, p.thumb_key)]
+    assert client.request("DELETE", "/auth/me", json={"password": "wrong-pass"}, headers=h).status_code == 400
+    assert client.request("DELETE", "/auth/me", json={"password": "password123"}, headers=h).status_code == 204
+    assert client.post("/auth/login", json={"email": "keep@example.com", "password": "password123"}).status_code == 401
+    assert not any(get_storage().exists(x) for x in keys)
+    with SessionLocal() as db:
+        assert db.get(models.Klass, k["id"]) is None

@@ -3,6 +3,7 @@
 import { TriangleAlert, UserPlus, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { loadPrefs } from "@/lib/prefs";
 import type { Balance, Klass } from "@/lib/types";
 import { EmptyState } from "./EmptyState";
 
@@ -18,6 +19,8 @@ export function BalanceView({ klass, onChildrenChange }: { klass: Klass; onChild
   const [data, setData] = useState<Balance | null>(null);
   const [names, setNames] = useState("");
   const [error, setError] = useState<string | null>(null);
+  // 설정의 '보는 기간'으로 시작 (오늘 포함 N일)
+  useEffect(() => void loadPrefs().then((p) => p.balance_days !== 7 && setFrom(isoDaysAgo(p.balance_days - 1))), []);
 
   const load = useCallback(() => {
     const p = new URLSearchParams();

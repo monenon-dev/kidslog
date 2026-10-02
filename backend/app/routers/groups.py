@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from .. import album, models, schemas
 from ..ai.llm import LLMError
 from ..ai.video_editor import edit_video
+from ..prefs import ai_provider_for
 from ..ai.writer import write_draft, write_subtitles
 from ..config import get_settings
 from ..db import get_db
@@ -154,7 +155,7 @@ def generate_note(
             tone=body.tone,
             kind=body.kind,
             subtitle_count=body.subtitle_count,
-            provider=get_settings().resolved_ai_provider,
+            provider=ai_provider_for(db, user.id),
         )
     except LLMError as e:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(e))
@@ -324,7 +325,7 @@ def draft_subtitles(body: schemas.SubtitleIn, user: models.User = Depends(curren
     if body.class_id is not None:
         owned_class(body.class_id, user, db)
     try:
-        d = write_subtitles(memo=body.memo, tone=body.tone, count=body.count, provider=get_settings().resolved_ai_provider)
+        d = write_subtitles(memo=body.memo, tone=body.tone, count=body.count, provider=ai_provider_for(db, user.id))
     except LLMError as e:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(e))
     warnings = _name_warnings(db, body.class_id, [d.title, *d.subtitles]) if body.class_id is not None else []
@@ -336,7 +337,7 @@ def video_edit(body: schemas.VideoEditIn, user: models.User = Depends(current_us
     """말로 한 편집 부탁 → 바꿀 설정만 돌려준다 (적용은 브라우저에서, 영상은 받지 않음)."""
     if body.class_id is not None:
         owned_class(body.class_id, user, db)
-    provider = get_settings().resolved_ai_provider
+    provider = ai_provider_for(db, user.id)
     n = len(body.state.clips)
     current = min(body.current, max(n, 1))
     try:

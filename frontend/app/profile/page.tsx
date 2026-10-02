@@ -1,19 +1,20 @@
 "use client";
 
-import { CalendarDays, Clapperboard, Images, KeyRound, LogOut, UserRound, Users } from "lucide-react";
+import { CalendarDays, CircleUserRound, Clapperboard, Images, KeyRound, LogOut, Settings, UserRound, Users, type LucideIcon } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import { AppHeader, RequireAuth } from "@/components/AppHeader";
 import { useAuth } from "@/components/AuthProvider";
+import { SETTINGS_SECTIONS, SettingsPanel, type SettingsSection } from "@/components/SettingsPanel";
 import { api } from "@/lib/api";
+import { forgetPrefs } from "@/lib/prefs";
 import type { User } from "@/lib/types";
 
 type Stats = { class_count: number; photo_count: number; child_count: number; video_count: number; created_at: string };
 
-function Profile() {
-  const { user, updateUser, logout } = useAuth();
-  const router = useRouter();
+function ProfilePanel() {
+  const { user, updateUser } = useAuth();
   const [stats, setStats] = useState<Stats | null>(null);
   const [name, setName] = useState(user?.name ?? "");
   const [nameMsg, setNameMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -69,9 +70,7 @@ function Profile() {
   ];
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 pb-12 pt-10">
-      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-        <section className="space-y-6">
+    <div className="space-y-6">
           <div className="card flex flex-wrap items-center gap-5 p-6 sm:p-8">
             <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-brand-soft text-2xl font-bold text-brand-ink">
               {user.name.slice(0, 1)}
@@ -153,36 +152,69 @@ function Profile() {
               {pwMsg && <p className={`text-sm ${pwMsg.ok ? "text-ok" : "text-bad"}`}>{pwMsg.text}</p>}
             </div>
           </form>
-        </section>
+      <div className="card flex flex-wrap items-center gap-2 p-4 text-sm">
+        <span className="mr-1 font-medium text-ink-2">바로 가기</span>
+        <Link href="/classes" className="btn-ghost py-1.5">
+          <Users size={15} /> 내 반
+        </Link>
+        <Link href="/video" className="btn-ghost py-1.5">
+          <Clapperboard size={15} /> 반 없이 영상만 만들기
+        </Link>
+      </div>
+    </div>
+  );
+}
 
-        <aside className="space-y-4">
-          <div className="card space-y-2 p-5">
-            <h2 className="font-semibold">바로 가기</h2>
-            <Link href="/classes" className="flex items-center gap-3 rounded-lg p-2 hover:bg-paper">
-              <Users size={18} className="text-brand" />
-              <span className="text-sm">내 반</span>
-            </Link>
-            <Link href="/video" className="flex items-center gap-3 rounded-lg p-2 hover:bg-paper">
-              <Clapperboard size={18} className="text-brand" />
-              <span className="text-sm">반 없이 영상만 만들기</span>
-            </Link>
+type Tab = "profile" | SettingsSection;
+
+function Account() {
+  const { logout } = useAuth();
+  const router = useRouter();
+  const search = useSearchParams();
+  const q = search.get("tab");
+  const tab: Tab = q === "profile" || SETTINGS_SECTIONS.some((x) => x.id === q) ? (q as Tab) : "profile";
+  const go = (t: Tab) => router.replace(`/profile?tab=${t}`, { scroll: false });
+
+  const item = (t: Tab, label: string, Icon?: LucideIcon) => (
+    <button
+      key={t}
+      type="button"
+      onClick={() => go(t)}
+      aria-current={tab === t ? "page" : undefined}
+      className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-left text-sm transition-colors lg:w-full ${
+        tab === t ? "bg-card font-semibold text-ink shadow-[0_1px_3px_rgba(0,0,0,0.06)]" : "text-ink-2 hover:bg-card/70 hover:text-ink"
+      }`}
+    >
+      {Icon && <Icon size={16} className={tab === t ? "text-brand" : "text-ink-3"} />}
+      {label}
+    </button>
+  );
+
+  return (
+    <main className="mx-auto w-full max-w-6xl px-4 pb-16 pt-8">
+      <div className="grid items-start gap-6 lg:grid-cols-[13rem_1fr]">
+        <nav aria-label="프로필과 설정" className="-mx-4 flex gap-1 overflow-x-auto px-4 pb-1 lg:sticky lg:top-4 lg:mx-0 lg:block lg:space-y-1 lg:overflow-visible lg:px-0">
+          {item("profile", "프로필", CircleUserRound)}
+          <div className="hidden px-3 pb-1 pt-4 text-xs font-semibold text-ink-3 lg:flex lg:items-center lg:gap-1.5">
+            <Settings size={13} /> 설정
           </div>
-          <div className="card space-y-2 p-5 text-sm text-ink-2">
-            <h2 className="font-semibold text-ink">개인정보 안내</h2>
-            <p className="break-keep">아이 이름은 사진 태그용으로만 쓰이고 AI에 보내지 않아요.</p>
-            <p className="break-keep">영상은 브라우저 안에서만 만들어지고 서버에는 편집 설정만 저장돼요.</p>
+          <span className="mx-1 w-px shrink-0 self-stretch bg-line lg:hidden" aria-hidden />
+          {SETTINGS_SECTIONS.map((x) => item(x.id, x.label))}
+          <div className="hidden border-t border-line pt-3 lg:mt-4 lg:block">
+            <button
+              type="button"
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-ink-2 hover:bg-card/70 hover:text-ink"
+              onClick={async () => {
+                await logout();
+                forgetPrefs();
+                window.location.replace("/");
+              }}
+            >
+              <LogOut size={16} className="text-ink-3" /> 로그아웃
+            </button>
           </div>
-          <button
-            className="btn-ghost w-full"
-            onClick={async () => {
-              await logout();
-              router.replace("/");
-            }}
-          >
-            <LogOut size={16} />
-            로그아웃
-          </button>
-        </aside>
+        </nav>
+        <div className="min-w-0">{tab === "profile" ? <ProfilePanel /> : <SettingsPanel section={tab} />}</div>
       </div>
     </main>
   );
@@ -193,7 +225,9 @@ export default function ProfilePage() {
     <RequireAuth>
       <div className="flex min-h-screen flex-col">
         <AppHeader>내 프로필</AppHeader>
-        <Profile />
+        <Suspense>
+          <Account />
+        </Suspense>
       </div>
     </RequireAuth>
   );

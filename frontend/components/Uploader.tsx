@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, putToStorage } from "@/lib/api";
+import { loadPrefs } from "@/lib/prefs";
 
 type Item = { file: File; photoId?: number; uploadUrl?: string; state: "waiting" | "uploading" | "done" | "error"; error?: string };
 
@@ -23,6 +24,7 @@ export function Uploader({ classId, onQueued }: { classId: number; onQueued: () 
   const [items, setItems] = useState<Item[]>([]);
   const [busy, setBusy] = useState(false);
   const [blur, setBlur] = useState(false);
+  useEffect(() => void loadPrefs().then((p) => setBlur(p.blur_faces_default)), []);
   const [error, setError] = useState<string | null>(null);
 
   const update = (target: Item, patch: Partial<Item>) => {

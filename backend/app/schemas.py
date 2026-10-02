@@ -342,3 +342,59 @@ class VideoEditOut(BaseModel):
     max_sec: int | None = None
     provider: str
     warnings: list[str] = []
+
+
+# ---- 설정·알림 ----
+
+
+class VideoDefaults(BaseModel):
+    font: str = Field(default="jua", max_length=30)
+    size: Literal["s", "m", "l"] = "m"
+    color: str = Field(default="#FFFFFF", pattern=r"^#[0-9A-Fa-f]{6}$")
+    effect: Literal["box", "outline", "shadow", "plain"] = "box"
+    position: Literal["bottom", "middle", "top"] = "bottom"
+    music: Literal["none", "bright", "calm"] = "bright"
+    max_sec: int = Field(default=15, ge=3, le=60)
+
+
+class NotifyPrefs(BaseModel):
+    analysis: bool = True  # 사진 분석 끝남/실패
+    low_photos: bool = True  # 사진이 적게 찍힌 아이 (주 1회)
+    ai_limit: bool = True  # AI 하루 한도 가까움/넘음
+    storage: bool = True  # 브라우저 저장 공간 부족, 편집 설정 저장 실패
+    retention: bool = True  # 보관 기간이 지나 사진을 지웠을 때
+
+
+class UserPrefs(BaseModel):
+    photo_retention_days: Literal[0, 30, 90, 180, 365] = 0  # 0 = 지우지 않음
+    ai_enabled: bool = True
+    blur_faces_default: bool = False
+    ai_tone: Literal["warm", "concise"] = "warm"
+    balance_days: Literal[7, 14, 30] = 7
+    balance_ratio: float = Field(default=0.7, ge=0.3, le=0.95)
+    video_defaults: VideoDefaults = Field(default_factory=VideoDefaults)
+    notify: NotifyPrefs = Field(default_factory=NotifyPrefs)
+
+
+class NotificationOut(BaseModel):
+    id: int
+    kind: str
+    title: str
+    body: str
+    link: str
+    created_at: datetime
+    read: bool
+
+
+class NotificationList(BaseModel):
+    items: list[NotificationOut]
+    unread: int
+
+
+class ClientNotifyIn(BaseModel):
+    event: Literal["storage_full", "draft_failed"]
+    link: str = Field(default="", max_length=200)
+
+
+class DeleteAccountIn(BaseModel):
+    password: str

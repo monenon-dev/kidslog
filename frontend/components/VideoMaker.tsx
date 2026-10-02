@@ -1,7 +1,7 @@
 "use client";
 
 import type { FFmpeg } from "@ffmpeg/ffmpeg";
-import { ArrowDown, ArrowUp, Check, Clapperboard, CloudCheck, CloudOff, FileVideo, HardDrive, Move, Music, Pause, PenLine, Play, RotateCcw, Send, Sparkles, TriangleAlert, Undo2, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Bookmark, Check, Clapperboard, CloudCheck, CloudOff, FileVideo, HardDrive, Move, Music, Pause, PenLine, Play, RotateCcw, Send, Sparkles, TriangleAlert, Undo2, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import type { Klass, SubtitleDraft, VideoDraft, VideoDraftClip, VideoDraftData, VideoEditResult, VideoRecord } from "@/lib/types";
@@ -30,8 +30,10 @@ import {
   type Frame,
   type SubStyle,
 } from "@/lib/video";
+import { loadPrefs, savePrefs, type VideoDefaults } from "@/lib/prefs";
 import { deleteVideo, loadVideo, saveVideo, updateVideoThumb } from "@/lib/videoStore";
 import { ColorPicker } from "./ColorPicker";
+import { Segmented } from "./Segmented";
 
 /** draftIdx: 저장된 편집 설정에서 몇 번째 클립이었는지 (다시 넣을 때 순서 맞추기용) */
 type Clip = { key: string; file: File; duration: number; subtitle: string; draftIdx?: number };
@@ -269,23 +271,11 @@ function SubtitlePreview({
   );
 }
 
-function Segmented<T extends string>({ value, options, onChange, disabled }: { value: T; options: readonly { id: T; label: string }[]; onChange: (v: T) => void; disabled?: boolean }) {
-  return (
-    <div className="flex rounded-lg border border-line p-0.5">
-      {options.map((o) => (
-        <button
-          key={o.id}
-          type="button"
-          disabled={disabled}
-          onClick={() => onChange(o.id)}
-          className={`flex-1 rounded-md px-2 py-1 text-sm transition-colors ${value === o.id ? "bg-brand-soft font-semibold text-brand-ink" : "text-ink-2 hover:bg-paper"}`}
-          aria-pressed={value === o.id}
-        >
-          {o.label}
-        </button>
-      ))}
-    </div>
-  );
+/** 브라우저에서만 알 수 있는 문제를 알림으로 남긴다 (설정에서 끌 수 있음) */
+function reportClientIssue(event: "storage_full" | "draft_failed", link: string) {
+  api("/notifications/client", { method: "POST", json: { event, link } })
+    .then(() => window.dispatchEvent(new Event("kidslog:notify")))
+    .catch(() => {});
 }
 
 const fmtSec = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
@@ -347,8 +337,10 @@ export function VideoMaker({ klass }: { klass: Klass | null }) {
     let alive = true;
     if (classId !== null) api<VideoRecord[]>(`/videos?class_id=${classId}`).then(setHistory).catch(() => {});
     (async () => {
-      const [draft, stored] = await Promise.all([api<VideoDraft>(draftPath).catch(() => null), loadVideo(storeKey)]);
+      const [draft, stored, prefs] = await Promise.all([api<VideoDraft>(draftPath).catch(() => null), loadVideo(storeKey), loadPrefs()]);
       if (!alive) return;
+      setAiTone(prefs.ai_tone);
+      defaultsRef.current = prefs.video_defaults;
 
       // 1) 서버에 자동 저장된 편집 설정 되살리기
       const d = draft?.data;
@@ -361,6 +353,9 @@ export function VideoMaker({ klass }: { klass: Klass | null }) {
         if (d.music === "none" || d.music === "file" || MUSIC_PRESETS.some((m) => m.id === d.music)) setMusic(d.music as MusicChoice);
         setLastMusicName(d.music_file_name);
         setMissing(d.clips.map((c, idx) => ({ ...c, idx })));
+      } else {
+        // 처음 만드는 영상은 설정의 '영상 기본 스타일'로 시작
+        applyDefaults(prefs.video_defaults);
       }
 
       // 2) 이 브라우저에 보관해 둔 지난 영상
@@ -408,20 +403,57 @@ export function VideoMaker({ klass }: { klass: Klass | null }) {
           lastSaved.current = draftJson;
           setSaveState("saved");
         })
-        .catch(() => setSaveState("error"));
+        .catch(() => {
+          setSaveState("error");
+          reportClientIssue("draft_failed", window.location.pathname + window.location.search);
+        });
     }, 800);
     return () => clearTimeout(t);
   }, [draftJson, draftLoaded, draftPath]);
+
+  const defaultsRef = useRef<VideoDefaults | null>(null);
+  const [defaultsMsg, setDefaultsMsg] = useState<string | null>(null);
+  function applyDefaults(vd: VideoDefaults | null) {
+    if (!vd) {
+      setMaxSec(15);
+      setFont(FONTS[0].id);
+      setSubStyle(DEFAULT_SUB_STYLE);
+      setMusic("bright");
+      return;
+    }
+    setMaxSec(vd.max_sec);
+    setFont(FONTS.some((f) => f.id === vd.font) ? vd.font : FONTS[0].id);
+    setSubStyle({ ...DEFAULT_SUB_STYLE, size: vd.size, color: vd.color.toUpperCase(), effect: vd.effect, position: vd.position });
+    setMusic(vd.music);
+  }
+  // 지금 꾸밈을 설정의 '영상 기본 스타일'로 저장
+  async function saveAsDefaults() {
+    const vd: VideoDefaults = {
+      font,
+      size: subStyle.size,
+      color: subStyle.color,
+      effect: subStyle.effect,
+      position: subStyle.position === "custom" ? (subStyle.at.y < 0.35 ? "top" : subStyle.at.y > 0.65 ? "bottom" : "middle") : subStyle.position,
+      music: music === "file" ? "bright" : music,
+      max_sec: maxSec,
+    };
+    try {
+      const p = await loadPrefs();
+      await savePrefs({ ...p, video_defaults: vd });
+      defaultsRef.current = vd;
+      setDefaultsMsg("기본 스타일로 저장했어요. 새 영상은 이 모양으로 시작해요.");
+    } catch {
+      setDefaultsMsg("저장하지 못했어요");
+    }
+    setTimeout(() => setDefaultsMsg(null), 4000);
+  }
 
   function resetAll() {
     if (!confirm("클립 목록과 제목·자막·꾸미기 설정을 모두 처음 상태로 돌릴까요? (보관된 영상은 그대로 둡니다)")) return;
     setClips([]);
     setMissing([]);
     setTitle("");
-    setMaxSec(15);
-    setFont(FONTS[0].id);
-    setSubStyle(DEFAULT_SUB_STYLE);
-    setMusic("bright");
+    applyDefaults(defaultsRef.current);
     setMusicFile(null);
     setLastMusicName("");
   }
@@ -779,6 +811,7 @@ export function VideoMaker({ klass }: { klass: Klass | null }) {
       setStageView("result");
       editorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       setStoreFailed(!kept);
+      if (!kept) reportClientIssue("storage_full", window.location.pathname + window.location.search);
 
       // 5) 성능 기록 (영상 파일은 올리지 않고 숫자만, 반에서 만든 영상만)
       const rec = classId === null ? null : await api<VideoRecord>("/videos", {
@@ -1367,6 +1400,13 @@ export function VideoMaker({ klass }: { klass: Klass | null }) {
             )}
           </div>
           <input ref={musicInput} type="file" accept="audio/*" hidden onChange={(e) => (setMusicFile(e.target.files?.[0] ?? null), (e.target.value = ""))} />
+          <div className="border-t border-line pt-3">
+            <button type="button" className="btn-ghost w-full" disabled={busy} onClick={saveAsDefaults}>
+              <Bookmark size={15} />
+              지금 꾸밈을 기본 스타일로 저장
+            </button>
+            <p className="mt-1.5 break-keep text-center text-xs text-ink-3">{defaultsMsg ?? "글꼴·자막 모양·음악·클립 길이를 새 영상의 시작값으로 써요."}</p>
+          </div>
         </div>
 
         {history.length > 0 && (

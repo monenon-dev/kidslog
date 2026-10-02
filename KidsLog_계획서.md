@@ -219,6 +219,9 @@ exports      (id, group_id, template_id, storage_key, created_at)
 |---|---|---|
 | POST | /auth/signup, /auth/login, /auth/refresh | 인증 |
 | GET/PATCH | /auth/me, /auth/me/stats, POST /auth/password | 프로필(이름 변경, 활동 요약, 비밀번호 변경) |
+| DELETE | /auth/me | 계정 삭제 (비밀번호 확인, 반·사진 파일·명단·기록 모두 삭제) |
+| GET/PUT | /settings | 사용자 설정 (사진 보관 기간, AI 사용, 얼굴 흐리게 기본값, 영상 기본 스타일, 말투, 균형 기준, 알림 켜기/끄기) |
+| GET/POST | /notifications, /notifications/{id}/read, /notifications/read-all, /notifications/client | 앱 안 알림 (분석 완료, 사진 적은 아이, AI 한도, 저장 문제, 보관 기간 정리) |
 | POST | /classes | 반 생성 |
 | POST | /photos/presign | 업로드용 Presigned URL 발급 |
 | POST | /photos/complete | 업로드 완료 + 분석 작업 등록 |

@@ -4,7 +4,9 @@ import { CircleUserRound } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { forgetPrefs } from "@/lib/prefs";
 import { useAuth } from "./AuthProvider";
+import { NotificationBell } from "./NotificationBell";
 
 export function AppHeader({ children }: { children?: React.ReactNode }) {
   const { user, logout } = useAuth();
@@ -20,11 +22,12 @@ export function AppHeader({ children }: { children?: React.ReactNode }) {
         </Link>
         <div className="min-w-0 flex-1 truncate text-sm text-ink-2">{children}</div>
         {user && (
-          <div className="flex items-center gap-2 text-sm">
+          <div className="flex items-center gap-1 text-sm sm:gap-2">
+            <NotificationBell />
             <Link
               href="/profile"
               className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-ink-2 transition-colors hover:bg-paper hover:text-ink"
-              title="내 프로필"
+              title="내 프로필·설정"
             >
               <CircleUserRound size={18} />
               <span className="hidden sm:inline">{user.name} 선생님</span>
@@ -33,6 +36,7 @@ export function AppHeader({ children }: { children?: React.ReactNode }) {
               className="btn-ghost"
               onClick={async () => {
                 await logout();
+                forgetPrefs();
                 router.replace("/");
               }}
             >

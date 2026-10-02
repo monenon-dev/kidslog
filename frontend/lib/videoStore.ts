@@ -70,3 +70,23 @@ export async function deleteVideo(classId: number): Promise<void> {
     await run("readwrite", (s) => s.delete(classId));
   } catch {}
 }
+
+/** 이 브라우저에 보관한 영상을 모두 지운다 (설정 화면, 계정 삭제) */
+export async function clearAllVideos(): Promise<boolean> {
+  try {
+    await run("readwrite", (s) => s.clear());
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** 보관 중인 영상 수와 용량 (MB) */
+export async function storedVideoStats(): Promise<{ count: number; mb: number }> {
+  try {
+    const all = (await run("readonly", (s) => s.getAll())) as StoredVideo[];
+    return { count: all.length, mb: all.reduce((t, v) => t + v.blob.size, 0) / 1024 / 1024 };
+  } catch {
+    return { count: 0, mb: 0 };
+  }
+}

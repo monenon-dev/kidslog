@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from . import models
+from . import models, prefs
 from .ai import image_ops
 from .ai.llm import LLMError
 from .ai.tagger import tag_image
@@ -90,10 +90,13 @@ def analyze_photo(photo_id: int, blur_faces: bool = False) -> None:
         custom = db.scalars(select(models.CustomTag.name).where(models.CustomTag.owner_id == klass.owner_id)).all()
         tags = tag_dictionary(list(custom))
 
-        provider = settings.resolved_ai_provider
-        if provider == "claude" and ai_calls_today(db, klass.owner_id) >= settings.ai_daily_limit:
-            log.warning("daily AI limit reached for user %s; using mock", klass.owner_id)
-            provider = "mock"
+        provider = prefs.ai_provider_for(db, klass.owner_id)
+        if provider == "claude":
+            used = ai_calls_today(db, klass.owner_id)
+            prefs.notify_ai_usage(db, klass.owner_id, used, settings.ai_daily_limit)
+            if used >= settings.ai_daily_limit:
+                log.warning("daily AI limit reached for user %s; using mock", klass.owner_id)
+                provider = "mock"
 
         small = image_ops.resized(img, settings.ai_image_max_side)
         if blur_faces:
@@ -124,6 +127,7 @@ def analyze_photo(photo_id: int, blur_faces: bool = False) -> None:
 
         photo.status = "done"
         db.commit()
+        prefs.notify_analysis_done(db, photo.class_id)
     except LLMError as e:
         db.rollback()
         _fail(db, photo_id, str(e))
@@ -141,3 +145,4 @@ def _fail(db: Session, photo_id: int, msg: str) -> None:
         photo.status = "failed"
         photo.error = msg
         db.commit()
+        prefs.notify_analysis_done(db, photo.class_id)

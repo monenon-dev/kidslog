@@ -7,6 +7,8 @@ from .. import models, schemas
 from ..config import get_settings
 from ..db import get_db
 from ..deps import current_user
+from ..prefs import delete_photo_files
+from ..storage import get_storage
 from ..security import create_access_token, create_refresh_token, decode, hash_password, verify_password
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -109,3 +111,27 @@ def my_stats(user: models.User = Depends(current_user), db: Session = Depends(ge
         video_count=count(models.Video),
         created_at=user.created_at,
     )
+
+
+@router.delete("/me", status_code=204)
+def delete_me(
+    body: schemas.DeleteAccountIn, response: Response, user: models.User = Depends(current_user), db: Session = Depends(get_db)
+):
+    """계정과 반·사진·명단·영상 기록을 모두 지운다. 저장소의 사진 파일과 앨범 이미지도 함께."""
+    if not verify_password(body.password, user.password_hash):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "비밀번호가 맞지 않습니다")
+    class_ids = select(models.Klass.id).where(models.Klass.owner_id == user.id)
+    delete_photo_files(list(db.scalars(select(models.Photo).where(models.Photo.class_id.in_(class_ids))).all()))
+    storage = get_storage()
+    for key in db.scalars(
+        select(models.Export.storage_key)
+        .join(models.Group, models.Group.id == models.Export.group_id)
+        .where(models.Group.class_id.in_(class_ids))
+    ).all():
+        try:
+            storage.delete(key)
+        except Exception:
+            pass
+    db.delete(user)  # 나머지 행은 FK ON DELETE CASCADE로 함께 지워진다
+    db.commit()
+    response.delete_cookie(REFRESH_COOKIE, path="/")

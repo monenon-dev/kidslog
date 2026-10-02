@@ -8,6 +8,7 @@ from .. import models, schemas
 from ..ai.tags import DEFAULT_ACTIVITY_TAGS, tag_dictionary
 from ..db import get_db
 from ..deps import current_user, owned_class
+from ..prefs import balance_rows, get_prefs
 
 router = APIRouter(tags=["classes"])
 
@@ -85,30 +86,10 @@ def balance(
     user: models.User = Depends(current_user),
     db: Session = Depends(get_db),
 ):
-    """아이별 사진 수. 평균의 70% 미만이면 low로 표시한다."""
+    """아이별 사진 수. 평균의 일정 비율(설정, 기본 70%) 미만이면 low로 표시한다."""
     k = owned_class(class_id, user, db)
-    photos = db.scalars(
-        select(models.Photo).where(models.Photo.class_id == class_id, models.Photo.status != "pending")
-    ).all()
-    photos = [
-        p
-        for p in photos
-        if (date_from is None or p.effective_date >= date_from) and (date_to is None or p.effective_date <= date_to)
-    ]
-    counts = {c.id: 0 for c in k.children}
-    untagged = 0
-    for p in photos:
-        if not p.children:
-            untagged += 1
-        for c in p.children:
-            counts[c.id] = counts.get(c.id, 0) + 1
-    avg = sum(counts.values()) / len(counts) if counts else 0.0
-    rows = [
-        schemas.BalanceRow(child_id=c.id, name=c.name, count=counts[c.id], low=avg > 0 and counts[c.id] < avg * 0.7)
-        for c in k.children
-    ]
-    rows.sort(key=lambda r: (r.count, r.name))
-    return schemas.BalanceOut(rows=rows, average=round(avg, 1), untagged_photos=untagged, total_photos=len(photos))
+    rows, avg, untagged, total = balance_rows(db, k, date_from, date_to, get_prefs(db, user.id).balance_ratio)
+    return schemas.BalanceOut(rows=rows, average=round(avg, 1), untagged_photos=untagged, total_photos=total)
 
 
 # ---- 활동 태그 사전 ----

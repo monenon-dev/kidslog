@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from .. import models, schemas
 from ..config import get_settings
+from ..prefs import get_prefs
 from ..db import get_db
 from ..deps import current_user, owned_class, owned_photo
 from ..pipeline import analyze_photo
@@ -58,7 +59,7 @@ def complete(
 ):
     """업로드 완료 알림 → 분석 작업 등록. 실제로 올라간 파일만 큐에 넣는다."""
     storage = get_storage()
-    blur = get_settings().face_blur_default if body.blur_faces is None else body.blur_faces
+    blur = (get_settings().face_blur_default or get_prefs(db, user.id).blur_faces_default) if body.blur_faces is None else body.blur_faces
     queued, missing = [], []
     for pid in dict.fromkeys(body.photo_ids):
         p = owned_photo(pid, user, db)
