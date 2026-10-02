@@ -1,18 +1,21 @@
 @import "tailwindcss";
 
 @theme {
-  --color-paper: #fbf8f3;
+  --color-paper: #f8f7f4;
   --color-card: #ffffff;
-  --color-ink: #2f2a25;
-  --color-ink-2: #6b625a;
-  --color-ink-3: #9a9087;
-  --color-line: #e9e2d8;
-  --color-brand: #e0703a;
-  --color-brand-ink: #b8531f;
-  --color-brand-soft: #fdeee4;
+  --color-ink: #2b2824;
+  --color-ink-2: #67615a;
+  --color-ink-3: #978f87;
+  --color-line: #e6e2dc;
+  --color-brand: #f2a531;
+  --color-brand-ink: #8a5a10;
+  --color-brand-hover: #e6951c;
+  --color-brand-soft: #fff3df;
+  --color-accent: #2f5f6b;
+  --color-accent-soft: #e3eef0;
   --color-ok: #2f8a5b;
-  --color-warn: #b7791f;
-  --color-warn-soft: #fdf3dc;
+  --color-warn: #b4501c;
+  --color-warn-soft: #fcebe0;
   --color-bad: #c2413b;
   --color-bad-soft: #fbe7e5;
   --color-bar: #3b7ea1;
@@ -29,7 +32,7 @@ body {
   @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50;
 }
 @utility btn-primary {
-  @apply btn bg-brand text-white hover:bg-brand-ink;
+  @apply btn bg-brand text-ink hover:bg-brand-hover;
 }
 @utility btn-ghost {
   @apply btn border border-line bg-card text-ink hover:bg-paper;
@@ -41,11 +44,15 @@ body {
   @apply w-full rounded-lg border border-line bg-card px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20;
 }
 @utility card {
-  @apply rounded-xl border border-line bg-card;
+  @apply rounded-xl border border-line bg-card shadow-[0_1px_3px_rgba(0,0,0,0.06)];
 }
 @utility chip {
   @apply inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs;
 }
 @utility label {
   @apply mb-1 block text-xs font-medium text-ink-2;
+}
+
+input[type="range"] {
+  accent-color: var(--color-brand);
 }

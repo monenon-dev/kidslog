@@ -1,6 +1,7 @@
 "use client";
 
 import type { FFmpeg } from "@ffmpeg/ffmpeg";
+import { ArrowDown, ArrowUp, TriangleAlert, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import type { Klass, VideoRecord } from "@/lib/types";
@@ -332,13 +333,13 @@ export function VideoMaker({ klass }: { klass: Klass }) {
                   />
                   <div className="flex gap-1">
                     <button className="btn-ghost px-2 py-1" disabled={busy || i === 0} onClick={() => move(i, -1)} aria-label="위로">
-                      ↑
+                      <ArrowUp size={16} />
                     </button>
                     <button className="btn-ghost px-2 py-1" disabled={busy || i === clips.length - 1} onClick={() => move(i, 1)} aria-label="아래로">
-                      ↓
+                      <ArrowDown size={16} />
                     </button>
                     <button className="btn-danger px-2 py-1" disabled={busy} onClick={() => setClips((cs) => cs.filter((x) => x.key !== c.key))} aria-label="빼기">
-                      ×
+                      <X size={16} />
                     </button>
                   </div>
                 </li>
@@ -348,7 +349,7 @@ export function VideoMaker({ klass }: { klass: Klass }) {
           {clips.length > 0 && (
             <p className="mt-3 text-sm text-ink-2">
               완성 길이 약 {fmtSec(totalSec)} · 입력 합계 {totalMb.toFixed(0)}MB
-              {totalMb > 600 && <span className="ml-2 text-warn">⚠ 용량이 커서 브라우저 메모리가 부족할 수 있습니다</span>}
+              {totalMb > 600 && <span className="ml-2 inline-flex items-center gap-1 align-middle text-warn"><TriangleAlert size={14} />용량이 커서 브라우저 메모리가 부족할 수 있습니다</span>}
             </p>
           )}
         </div>
@@ -394,7 +395,7 @@ export function VideoMaker({ klass }: { klass: Klass }) {
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={f.dataUrl} alt={`${fmtSec(f.time)} 장면`} className="aspect-video w-full object-cover" />
-                    {i === 0 && <span className="absolute left-1 top-1 rounded bg-brand px-1.5 text-[11px] text-white">추천</span>}
+                    {i === 0 && <span className="absolute left-1 top-1 rounded bg-brand px-1.5 text-[11px] font-medium text-ink">추천</span>}
                     <span className="absolute bottom-1 right-1 rounded bg-black/55 px-1 text-[10px] text-white">{fmtSec(f.time)}</span>
                   </button>
                 </li>

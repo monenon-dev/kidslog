@@ -11,7 +11,7 @@ export function AppHeader({ children }: { children?: React.ReactNode }) {
   return (
     <header className="border-b border-line bg-card">
       <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
-        <Link href="/classes" className="text-lg font-bold text-brand">
+        <Link href="/classes" className="text-lg font-bold text-ink">
           KidsLog
         </Link>
         <div className="min-w-0 flex-1 truncate text-sm text-ink-2">{children}</div>

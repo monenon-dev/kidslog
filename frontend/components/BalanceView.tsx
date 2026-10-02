@@ -1,8 +1,10 @@
 "use client";
 
+import { TriangleAlert, UserPlus, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import type { Balance, Klass } from "@/lib/types";
+import { EmptyState } from "./EmptyState";
 
 function isoDaysAgo(n: number) {
   const d = new Date();
@@ -85,7 +87,9 @@ export function BalanceView({ klass, onChildrenChange }: { klass: Klass; onChild
 
         {error && <p className="mt-2 text-sm text-bad">{error}</p>}
 
-        {data && data.rows.length === 0 && <p className="mt-6 text-sm text-ink-3">오른쪽에서 아이 명단을 먼저 등록하세요.</p>}
+        {data && data.rows.length === 0 && (
+          <EmptyState className="mt-6" icon={UserPlus} title="아이 명단이 비어 있습니다" description="‘아이 명단’에 이름을 등록하고 사진에 태그하면 아이별 사진 수를 여기서 비교할 수 있습니다." />
+        )}
 
         {data && data.rows.length > 0 && (
           <>
@@ -98,7 +102,7 @@ export function BalanceView({ klass, onChildrenChange }: { klass: Klass; onChild
                     <div className="absolute inset-y-[-3px] w-px bg-ink-3" style={{ left: `${(data.average / max) * 100}%` }} aria-hidden />
                   </div>
                   <span className="text-right tabular-nums">
-                    {r.count}장{r.low && <span className="ml-1 text-xs font-medium text-warn">⚠ 적음</span>}
+                    {r.count}장{r.low && <span className="ml-1 inline-flex items-center gap-0.5 align-middle text-xs font-medium text-warn"><TriangleAlert size={12} strokeWidth={2.5} />적음</span>}
                   </span>
                 </li>
               ))}
@@ -120,7 +124,7 @@ export function BalanceView({ klass, onChildrenChange }: { klass: Klass; onChild
             <li key={c.id} className="chip border-line">
               {c.name}
               <button className="text-ink-3 hover:text-bad" onClick={() => removeChild(c.id, c.name)} aria-label={`${c.name} 삭제`}>
-                ×
+                <X size={14} />
               </button>
             </li>
           ))}

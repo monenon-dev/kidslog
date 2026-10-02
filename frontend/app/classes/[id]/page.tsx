@@ -45,7 +45,7 @@ function Workspace() {
               key={t.id}
               onClick={() => router.replace(`/classes/${classId}?tab=${t.id}`, { scroll: false })}
               className={`whitespace-nowrap border-b-2 px-3 py-3 text-sm font-medium transition ${
-                tab === t.id ? "border-brand text-brand" : "border-transparent text-ink-2 hover:text-ink"
+                tab === t.id ? "border-brand text-ink" : "border-transparent text-ink-2 hover:text-ink"
               }`}
             >
               {t.label}

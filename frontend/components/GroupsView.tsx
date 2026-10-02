@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowLeft, TriangleAlert } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import type { Group, GroupDetail, Klass, Note } from "@/lib/types";
@@ -144,7 +145,8 @@ function GroupDetailView({ groupId, klass, onBack }: { groupId: number; klass: K
     <div className="space-y-5">
       <div className="flex flex-wrap items-center gap-3">
         <button className="btn-ghost" onClick={onBack}>
-          ← 묶음 목록
+          <ArrowLeft size={16} />
+          묶음 목록
         </button>
         <input
           className="input max-w-sm font-semibold"
@@ -177,12 +179,12 @@ function GroupDetailView({ groupId, klass, onBack }: { groupId: number; klass: K
             <li key={p.id} className={`card relative overflow-hidden ${isCover ? "ring-2 ring-brand" : ""}`}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {p.thumb_url && <img src={p.thumb_url} alt={p.caption} className="aspect-square w-full object-cover" />}
-              {isCover && <span className="absolute left-1 top-1 rounded bg-brand px-1.5 text-[11px] text-white">대표</span>}
-              {reasons.length > 0 && <span className="absolute right-1 top-1 rounded bg-warn-soft px-1 text-[11px] text-warn">⚠ {reasons[0]}</span>}
+              {isCover && <span className="absolute left-1 top-1 rounded bg-brand px-1.5 text-[11px] font-medium text-ink">대표</span>}
+              {reasons.length > 0 && <span className="absolute right-1 top-1 inline-flex items-center gap-0.5 rounded bg-warn-soft px-1 text-[11px] text-warn"><TriangleAlert size={11} strokeWidth={2.5} />{reasons[0]}</span>}
               <div className="truncate px-1.5 pt-1 text-[11px] text-ink-2">{p.child_ids.map((id) => childName.get(id)).join(", ") || " "}</div>
               <div className="flex text-[11px]">
                 {!isCover && (
-                  <button className="flex-1 py-1 text-ink-2 hover:text-brand" onClick={() => patch({ cover_photo_id: p.id })}>
+                  <button className="flex-1 py-1 text-ink-2 hover:text-brand-ink" onClick={() => patch({ cover_photo_id: p.id })}>
                     대표로
                   </button>
                 )}
@@ -238,8 +240,9 @@ function GroupDetailView({ groupId, klass, onBack }: { groupId: number; klass: K
           {note && (
             <>
               {note.warnings.map((w) => (
-                <p key={w} className="rounded-lg bg-warn-soft p-2 text-xs text-warn">
-                  ⚠ {w}
+                <p key={w} className="flex items-start gap-1.5 rounded-lg bg-warn-soft p-2 text-xs text-warn">
+                  <TriangleAlert size={14} className="mt-px shrink-0" />
+                  {w}
                 </p>
               ))}
               <input className="input font-semibold" value={note.title} onChange={(e) => (setNote({ ...note, title: e.target.value }), setSaved(false))} aria-label="제목" />

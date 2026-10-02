@@ -1,9 +1,12 @@
 "use client";
 
+import { Check, EyeOff, Images, SearchX, Tag, TriangleAlert, Upload } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import type { Klass, Photo, Tags } from "@/lib/types";
+import { EmptyState } from "./EmptyState";
 import { PhotoModal } from "./PhotoModal";
+import { TipCard } from "./TipCard";
 import { Uploader } from "./Uploader";
 
 const PAGE = 120;
@@ -103,9 +106,12 @@ export function Gallery({ klass }: { klass: Klass }) {
 
   const childName = new Map(klass.children.map((c) => [c.id, c.name]));
   const activityTags = tags?.all ?? [];
+  const hasFilter = Object.values(filters).some(Boolean);
+  // 사진이 하나도 없으면 폭을 좁혀 화면 가운데에 모은다
+  const noPhotos = !loading && photos.length === 0 && !hasFilter;
 
   return (
-    <div className="space-y-4">
+    <div className={`space-y-4 ${noPhotos ? "mx-auto max-w-2xl" : ""}`}>
       <Uploader classId={klass.id} onQueued={() => load()} />
 
       <div className="flex flex-wrap items-end gap-2">
@@ -203,10 +209,11 @@ export function Gallery({ klass }: { klass: Klass }) {
         {photos.map((p) => {
           const isSel = selected.has(p.id);
           const reasons = flagReasons(p);
+          const pending = p.status === "uploaded" || p.status === "analyzing";
           return (
             <li key={p.id}>
               <button
-                className={`card group block w-full overflow-hidden text-left transition ${isSel ? "ring-2 ring-brand" : "hover:border-brand"}`}
+                className={`card group block w-full overflow-hidden text-left transition-[border-color,box-shadow] duration-200 hover:shadow-[0_8px_20px_rgba(0,0,0,0.10)] ${isSel ? "ring-2 ring-brand" : "hover:border-brand"}`}
                 onClick={() => {
                   if (selecting) {
                     const s = new Set(selected);
@@ -216,30 +223,38 @@ export function Gallery({ klass }: { klass: Klass }) {
                   } else setOpen(p);
                 }}
               >
-                <div className="relative aspect-square bg-paper">
-                  {p.thumb_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={p.thumb_url} alt={p.caption || p.original_filename} className="h-full w-full object-cover" loading="lazy" />
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-xs text-ink-3">
-                      {p.status === "failed" ? "분석 실패" : "분석 중…"}
-                    </div>
-                  )}
-                  {selecting && (
-                    <span className={`absolute left-2 top-2 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white text-xs text-white ${isSel ? "bg-brand" : "bg-black/30"}`}>
-                      {isSel ? "✓" : ""}
-                    </span>
-                  )}
-                  {reasons.length > 0 && (
-                    <span className="absolute right-2 top-2 rounded bg-warn-soft px-1.5 py-0.5 text-[11px] font-medium text-warn">⚠ {reasons.join("·")}</span>
-                  )}
-                  {p.quality_score !== null && (
-                    <span className="absolute bottom-2 right-2 rounded bg-black/55 px-1.5 py-0.5 text-[11px] text-white">품질 {Math.round(p.quality_score)}</span>
-                  )}
+                <div className="p-1.5 pb-0">
+                  <div className="relative aspect-square overflow-hidden rounded-lg bg-paper">
+                    {p.thumb_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={p.thumb_url} alt={p.caption || p.original_filename} className="h-full w-full object-cover" loading="lazy" />
+                    ) : p.status === "failed" ? (
+                      <div className="flex h-full items-center justify-center text-xs text-ink-3">분석 실패</div>
+                    ) : (
+                      <div className="h-full w-full bg-line/70 motion-safe:animate-pulse" role="status">
+                        <span className="sr-only">분석 중</span>
+                      </div>
+                    )}
+                    {selecting && (
+                      <span className={`absolute left-2 top-2 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white text-xs text-white ${isSel ? "bg-brand-ink" : "bg-black/30"}`}>
+                        {isSel && <Check size={14} strokeWidth={3} />}
+                      </span>
+                    )}
+                    {reasons.length > 0 && (
+                      <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded bg-warn-soft px-1.5 py-0.5 text-[11px] font-medium text-warn">
+                        <TriangleAlert size={12} strokeWidth={2.5} />
+                        {reasons.join("·")}
+                      </span>
+                    )}
+                    {p.quality_score !== null && (
+                      <span className="absolute bottom-2 right-2 rounded bg-black/55 px-1.5 py-0.5 text-[11px] text-white">품질 {Math.round(p.quality_score)}</span>
+                    )}
+                  </div>
                 </div>
                 <div className="space-y-1 p-2">
                   <div className="flex items-center gap-1 text-xs">
                     {p.activity && <span className="chip border-brand/30 bg-brand-soft text-brand-ink">{p.activity}</span>}
+                    {pending && !p.activity && <span className="h-5 w-14 rounded-full bg-line/70 motion-safe:animate-pulse" aria-hidden />}
                     {p.status === "failed" && <span className="chip border-bad/30 bg-bad-soft text-bad">실패</span>}
                   </div>
                   <div className="truncate text-xs text-ink-2">
@@ -251,7 +266,33 @@ export function Gallery({ klass }: { klass: Klass }) {
           );
         })}
       </ul>
-      {!loading && photos.length === 0 && <p className="py-10 text-center text-sm text-ink-3">조건에 맞는 사진이 없습니다.</p>}
+      {!loading && photos.length === 0 &&
+        (hasFilter ? (
+          <EmptyState
+            icon={SearchX}
+            title="조건에 맞는 사진이 없습니다"
+            description="날짜·활동·품질 조건이나 검색어를 바꿔 보세요."
+            action={{
+              label: "조건 초기화",
+              onClick: () => {
+                setFilters({ date: "", tag: "", q: "", quality: "", child: "" });
+                setQuery("");
+              },
+            }}
+          />
+        ) : (
+          <>
+            <EmptyState icon={Images} title="아직 사진이 없습니다" description="위에서 사진을 올리면 AI가 활동별로 태그를 달고 잘 나온 사진을 골라 줍니다." />
+            <TipCard
+              title="이렇게 활용해보세요"
+              items={[
+                { icon: Upload, text: "여러 장을 한 번에 끌어다 놓아도 됩니다" },
+                { icon: EyeOff, text: "AI 분석 전 얼굴 흐리게 옵션을 쓸 수 있어요" },
+                { icon: Tag, text: "사진에 아이 이름을 태그하면 ‘아이별 균형’ 탭에서 통계를 볼 수 있어요" },
+              ]}
+            />
+          </>
+        ))}
       {photos.length < total && (
         <div className="text-center">
           <button className="btn-ghost" onClick={() => load(limitRef.current + PAGE)}>

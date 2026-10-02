@@ -1,5 +1,6 @@
 "use client";
 
+import { Check, TriangleAlert, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import type { Klass, Photo, Tags } from "@/lib/types";
@@ -90,8 +91,8 @@ export function PhotoModal({ photo, klass, tags, onTagsChange, onChange, onDelet
                 </p>
               )}
             </div>
-            <button className="text-xl leading-none text-ink-3 hover:text-ink" onClick={onClose} aria-label="닫기">
-              ×
+            <button className="rounded-md p-1 text-ink-3 hover:bg-paper hover:text-ink" onClick={onClose} aria-label="닫기">
+              <X size={20} />
             </button>
           </div>
 
@@ -101,8 +102,8 @@ export function PhotoModal({ photo, klass, tags, onTagsChange, onChange, onDelet
               <span className="chip border-line">점수 {photo.quality_score ?? "-"}</span>
               <span className="chip border-line">선명도 {photo.sharpness ?? "-"}</span>
               <span className="chip border-line">밝기 {photo.brightness ?? "-"}</span>
-              {photo.eyes_closed && <span className="chip border-warn/30 bg-warn-soft text-warn">⚠ 눈 감음</span>}
-              {photo.duplicate_of !== null && <span className="chip border-warn/30 bg-warn-soft text-warn">⚠ 비슷한 사진 있음 (#{photo.duplicate_of})</span>}
+              {photo.eyes_closed && <span className="chip border-warn/30 bg-warn-soft text-warn"><TriangleAlert size={12} />눈 감음</span>}
+              {photo.duplicate_of !== null && <span className="chip border-warn/30 bg-warn-soft text-warn"><TriangleAlert size={12} />비슷한 사진 있음 (#{photo.duplicate_of})</span>}
             </div>
           </section>
 
@@ -159,7 +160,7 @@ export function PhotoModal({ photo, klass, tags, onTagsChange, onChange, onDelet
                       onClick={() => toggleChild(c.id)}
                       className={`chip ${on ? "border-bar bg-bar text-white" : "border-line text-ink-2 hover:border-bar"}`}
                     >
-                      {on && "✓ "}
+                      {on && <Check size={12} strokeWidth={3} />}
                       {c.name}
                     </button>
                   );
