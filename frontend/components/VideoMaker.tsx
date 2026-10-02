@@ -1,7 +1,7 @@
 "use client";
 
 import type { FFmpeg } from "@ffmpeg/ffmpeg";
-import { ArrowDown, ArrowUp, TriangleAlert, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, Music, TriangleAlert, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import type { Klass, VideoRecord } from "@/lib/types";
@@ -12,14 +12,23 @@ import {
   MAX_CLIP_MB,
   MAX_CLIP_SEC,
   MAX_CLIPS,
+  DEFAULT_SUB_STYLE,
   MUSIC_PRESETS,
   OUT_H,
   OUT_W,
+  SUB_COLORS,
+  SUB_EFFECTS,
+  SUB_MARGIN,
+  SUB_POSITIONS,
+  SUB_SIZES,
   musicExpr,
   renderThumbnail,
   sampleFrames,
+  subStyleColors,
+  subtitleFilter,
   videoDuration,
   type Frame,
+  type SubStyle,
 } from "@/lib/video";
 
 type Clip = { key: string; file: File; duration: number; subtitle: string };
@@ -60,6 +69,58 @@ async function loadFont(id: string): Promise<Uint8Array> {
   return fontCache.get(id)!;
 }
 
+/** 출력 영상(1280×720) 비율 그대로 자막 모양을 미리 보여준다. cqw = 미리보기 폭의 1% */
+function SubtitlePreview({ text, style, fontFamily, fontReady }: { text: string; style: SubStyle; fontFamily: string; fontReady: boolean }) {
+  const px = SUB_SIZES.find((s) => s.id === style.size)!.px;
+  const { hex, back } = subStyleColors(style);
+  const u = (v: number) => `${(v / OUT_W) * 100}cqw`;
+  const rgba = (h: string, a: number) => `rgba(${parseInt(h.slice(1, 3), 16)},${parseInt(h.slice(3, 5), 16)},${parseInt(h.slice(5, 7), 16)},${a})`;
+  const pos =
+    style.position === "bottom"
+      ? { bottom: u(SUB_MARGIN) }
+      : style.position === "top"
+        ? { top: u(SUB_MARGIN) }
+        : { top: "50%", transform: "translateY(-50%)" };
+  return (
+    <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-gradient-to-br from-[#7fa7b0] via-[#c9b79a] to-[#e9a95a]" style={{ containerType: "inline-size" }}>
+      <div className="absolute inset-x-0 flex justify-center" style={pos}>
+        <span
+          className="whitespace-pre leading-none"
+          style={{
+            fontFamily: fontReady ? `"${fontFamily}"` : undefined,
+            fontSize: u(px),
+            color: hex,
+            ...(style.effect === "box" && { background: rgba(back, 0.45), padding: u(px * 0.38) }),
+            ...(style.effect === "outline" && { WebkitTextStroke: `${u(Math.max(2, Math.round(px / 12)) * 2)} ${rgba(back, 0.85)}`, paintOrder: "stroke fill" }),
+            ...(style.effect === "shadow" && { textShadow: `${u(px / 16)} ${u(px / 16)} 0 ${rgba(back, 0.6)}` }),
+          }}
+        >
+          {text}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function Segmented<T extends string>({ value, options, onChange, disabled }: { value: T; options: readonly { id: T; label: string }[]; onChange: (v: T) => void; disabled?: boolean }) {
+  return (
+    <div className="flex rounded-lg border border-line p-0.5">
+      {options.map((o) => (
+        <button
+          key={o.id}
+          type="button"
+          disabled={disabled}
+          onClick={() => onChange(o.id)}
+          className={`flex-1 rounded-md px-2 py-1 text-sm transition-colors ${value === o.id ? "bg-brand-soft font-semibold text-brand-ink" : "text-ink-2 hover:bg-paper"}`}
+          aria-pressed={value === o.id}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 const fmtSec = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
 
 export function VideoMaker({ klass }: { klass: Klass }) {
@@ -69,6 +130,8 @@ export function VideoMaker({ klass }: { klass: Klass }) {
   const [font, setFont] = useState<string>(FONTS[0].id);
   const [music, setMusic] = useState<MusicChoice>("bright");
   const [musicFile, setMusicFile] = useState<File | null>(null);
+  const [subStyle, setSubStyle] = useState<SubStyle>(DEFAULT_SUB_STYLE);
+  const [fontReady, setFontReady] = useState<string | null>(null);
   const [stage, setStage] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -78,6 +141,7 @@ export function VideoMaker({ klass }: { klass: Klass }) {
   const [history, setHistory] = useState<VideoRecord[]>([]);
   const logRef = useRef<string[]>([]);
   const fileInput = useRef<HTMLInputElement>(null);
+  const musicInput = useRef<HTMLInputElement>(null);
   const pendingSubs = useRef<string[]>([]);
 
   useEffect(() => {
@@ -93,6 +157,13 @@ export function VideoMaker({ klass }: { klass: Klass }) {
     } catch {}
   }, [klass.id]);
   useEffect(() => () => void (output && URL.revokeObjectURL(output.url)), [output]);
+  // 미리보기용으로 고른 글꼴을 미리 받아 둔다 (영상 만들 때도 캐시를 그대로 씀)
+  useEffect(() => {
+    let alive = true;
+    loadFont(font).then(() => alive && setFontReady(font)).catch(() => {});
+    return () => void (alive = false);
+  }, [font]);
+  const setSub = <K extends keyof SubStyle>(k: K, v: SubStyle[K]) => setSubStyle((st) => ({ ...st, [k]: v }));
 
   async function addFiles(list: FileList | null) {
     if (!list) return;
@@ -186,14 +257,12 @@ export function VideoMaker({ klass }: { klass: Klass }) {
         ];
         if (c.subtitle.trim()) {
           await write(`sub_${i}.txt`, c.subtitle.trim());
-          filters.push(
-            `drawtext=fontfile=/font.ttf:textfile=/sub_${i}.txt:fontsize=52:fontcolor=white:box=1:boxcolor=black@0.45:boxborderw=20:x=(w-text_w)/2:y=h-text_h-56`,
-          );
+          filters.push(subtitleFilter(subStyle, `/sub_${i}.txt`));
         }
         if (i === 0 && title.trim()) {
           await write("title.txt", title.trim());
           filters.push(
-            `drawtext=fontfile=/font.ttf:textfile=/title.txt:fontsize=76:fontcolor=white:borderw=5:bordercolor=black@0.6:x=(w-text_w)/2:y=(h-text_h)/2:enable='lt(t,3)'`,
+            `drawtext=fontfile=/font.ttf:textfile=/title.txt:fontsize=76:fontcolor=white:borderw=5:bordercolor=black@0.6:x=(w-text_w)/2:y=${subStyle.position === "middle" ? "h*0.22" : "(h-text_h)/2"}:enable='lt(t,3)'`,
           );
         }
         const part = `part_${i}.mp4`;
@@ -424,19 +493,70 @@ export function VideoMaker({ klass }: { klass: Klass }) {
             <label className="label">클립당 최대 길이: {maxSec}초</label>
             <input type="range" min={3} max={MAX_CLIP_SEC} value={maxSec} onChange={(e) => setMaxSec(Number(e.target.value))} className="w-full" disabled={busy} />
           </div>
-          <div>
-            <label className="label">자막 글꼴 (SIL OFL, 상업적 이용 가능)</label>
-            <select className="input" value={font} onChange={(e) => setFont(e.target.value)} disabled={busy}>
-              {FONTS.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.label}
-                </option>
-              ))}
-            </select>
-          </div>
+          <fieldset className="space-y-3 rounded-xl border border-line p-3">
+            <legend className="px-1 text-sm font-semibold">자막 꾸미기</legend>
+            <SubtitlePreview
+              text={clips.find((c) => c.subtitle.trim())?.subtitle.trim() || "숲에서 도토리를 찾았어요"}
+              style={subStyle}
+              fontFamily={`kl-${font}`}
+              fontReady={fontReady === font}
+            />
+            <div>
+              <label className="label">글꼴 (SIL OFL, 상업적 이용 가능)</label>
+              <select className="input" value={font} onChange={(e) => setFont(e.target.value)} disabled={busy}>
+                {FONTS.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <span className="label">크기</span>
+              <Segmented value={subStyle.size} options={SUB_SIZES} onChange={(v) => setSub("size", v)} disabled={busy} />
+            </div>
+            <div>
+              <span className="label">글자색</span>
+              <div className="flex flex-wrap gap-2">
+                {SUB_COLORS.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    disabled={busy}
+                    onClick={() => setSub("color", c.id)}
+                    className={`flex h-8 w-8 items-center justify-center rounded-full border transition-shadow ${subStyle.color === c.id ? "border-ink ring-2 ring-brand ring-offset-2" : "border-line"}`}
+                    style={{ background: c.hex }}
+                    aria-label={c.label}
+                    aria-pressed={subStyle.color === c.id}
+                    title={c.label}
+                  >
+                    {subStyle.color === c.id && <Check size={14} strokeWidth={3} color={c.id === "ink" ? "#fff" : "#2b2824"} />}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <span className="label">효과</span>
+              <Segmented value={subStyle.effect} options={SUB_EFFECTS} onChange={(v) => setSub("effect", v)} disabled={busy} />
+            </div>
+            <div>
+              <span className="label">위치</span>
+              <Segmented value={subStyle.position} options={SUB_POSITIONS} onChange={(v) => setSub("position", v)} disabled={busy} />
+            </div>
+          </fieldset>
           <div>
             <label className="label">배경음악 (원본 소리는 항상 음소거)</label>
-            <select className="input" value={music} onChange={(e) => setMusic(e.target.value as MusicChoice)} disabled={busy}>
+            <select
+              className="input"
+              value={music}
+              onChange={(e) => {
+                const v = e.target.value as MusicChoice;
+                setMusic(v);
+                // "내 음원 파일"을 고르면 바로 파일 선택 창을 연다
+                if (v === "file" && !musicFile) musicInput.current?.click();
+              }}
+              disabled={busy}
+            >
               <option value="none">없음 (무음)</option>
               {MUSIC_PRESETS.map((m) => (
                 <option key={m.id} value={m.id}>
@@ -447,11 +567,25 @@ export function VideoMaker({ klass }: { klass: Klass }) {
             </select>
             {music === "file" && (
               <>
-                <input type="file" accept="audio/*" className="mt-2 text-sm" onChange={(e) => setMusicFile(e.target.files?.[0] ?? null)} />
+                <div className="mt-2 flex items-center gap-2">
+                  <button type="button" className="btn-ghost shrink-0" disabled={busy} onClick={() => musicInput.current?.click()}>
+                    <Music size={16} />
+                    {musicFile ? "다른 파일" : "음원 파일 선택"}
+                  </button>
+                  <span className={`min-w-0 truncate text-sm ${musicFile ? "text-ink" : "text-ink-3"}`} title={musicFile?.name}>
+                    {musicFile ? musicFile.name : "선택된 파일 없음"}
+                  </span>
+                  {musicFile && (
+                    <button type="button" className="ml-auto shrink-0 text-ink-3 hover:text-bad" disabled={busy} onClick={() => setMusicFile(null)} aria-label="음원 파일 빼기">
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
                 <p className="mt-1 text-xs text-warn">저작권이 허용된 음원(CC0, 상업 이용 가능 등)만 사용하세요.</p>
               </>
             )}
           </div>
+          <input ref={musicInput} type="file" accept="audio/*" hidden onChange={(e) => (setMusicFile(e.target.files?.[0] ?? null), (e.target.value = ""))} />
           <p className="text-xs text-ink-3">
             출력: {OUT_W}×{OUT_H}, {FPS}fps, H.264
           </p>

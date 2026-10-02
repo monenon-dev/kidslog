@@ -9,11 +9,74 @@ export const MAX_CLIP_MB = 300;
 export const FFMPEG_CORE = "https://unpkg.com/@ffmpeg/core@0.12.10/dist/esm";
 
 // 상업적 이용이 허용된 SIL OFL 한글 글꼴 (google/fonts 저장소)
+const OFL = "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl";
 export const FONTS = [
-  { id: "jua", label: "주아 (둥근)", url: "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/jua/Jua-Regular.ttf" },
-  { id: "dohyeon", label: "도현 (또렷한)", url: "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/dohyeon/DoHyeon-Regular.ttf" },
-  { id: "nanum", label: "나눔고딕 Bold", url: "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/nanumgothic/NanumGothic-Bold.ttf" },
+  { id: "jua", label: "주아 (둥근)", url: `${OFL}/jua/Jua-Regular.ttf` },
+  { id: "dohyeon", label: "도현 (또렷한)", url: `${OFL}/dohyeon/DoHyeon-Regular.ttf` },
+  { id: "nanum", label: "나눔고딕 Bold", url: `${OFL}/nanumgothic/NanumGothic-Bold.ttf` },
+  { id: "blackhansans", label: "검은고딕 (굵은 제목)", url: `${OFL}/blackhansans/BlackHanSans-Regular.ttf` },
+  { id: "sunflower", label: "해바라기 (깔끔한)", url: `${OFL}/sunflower/Sunflower-Bold.ttf` },
+  { id: "gowundodum", label: "고운돋움 (부드러운)", url: `${OFL}/gowundodum/GowunDodum-Regular.ttf` },
+  { id: "gaegu", label: "개구 (손글씨)", url: `${OFL}/gaegu/Gaegu-Bold.ttf` },
+  { id: "nanumpen", label: "나눔손글씨 펜", url: `${OFL}/nanumpenscript/NanumPenScript-Regular.ttf` },
+  { id: "yeonsung", label: "연성 (붓글씨 느낌)", url: `${OFL}/yeonsung/YeonSung-Regular.ttf` },
 ] as const;
+
+// 자막 꾸미기 옵션. 크기·여백은 1280×720 출력 기준 픽셀.
+export const SUB_SIZES = [
+  { id: "s", label: "작게", px: 40 },
+  { id: "m", label: "보통", px: 52 },
+  { id: "l", label: "크게", px: 66 },
+] as const;
+export const SUB_COLORS = [
+  { id: "white", label: "흰색", hex: "#FFFFFF" },
+  { id: "yellow", label: "노랑", hex: "#FFE066" },
+  { id: "amber", label: "주황", hex: "#F2A531" },
+  { id: "mint", label: "민트", hex: "#8EE3C8" },
+  { id: "pink", label: "분홍", hex: "#FFB3C7" },
+  { id: "ink", label: "검정", hex: "#2B2824" },
+] as const;
+export const SUB_EFFECTS = [
+  { id: "box", label: "배경 상자" },
+  { id: "outline", label: "테두리" },
+  { id: "shadow", label: "그림자" },
+  { id: "plain", label: "없음" },
+] as const;
+export const SUB_POSITIONS = [
+  { id: "bottom", label: "아래" },
+  { id: "middle", label: "가운데" },
+  { id: "top", label: "위" },
+] as const;
+export const SUB_MARGIN = 56;
+
+export type SubStyle = {
+  size: (typeof SUB_SIZES)[number]["id"];
+  color: (typeof SUB_COLORS)[number]["id"];
+  effect: (typeof SUB_EFFECTS)[number]["id"];
+  position: (typeof SUB_POSITIONS)[number]["id"];
+};
+export const DEFAULT_SUB_STYLE: SubStyle = { size: "m", color: "white", effect: "box", position: "bottom" };
+
+/** 글자색이 어두우면 테두리·상자·그림자는 밝게 뒤집는다 */
+export function subStyleColors(st: SubStyle) {
+  const hex = SUB_COLORS.find((c) => c.id === st.color)!.hex;
+  const dark = st.color === "ink";
+  return { hex, back: dark ? "#FFFFFF" : "#000000" };
+}
+
+/** ffmpeg drawtext 필터 (fontfile·textfile은 ffmpeg 가상 파일 경로) */
+export function subtitleFilter(st: SubStyle, textfile: string): string {
+  const px = SUB_SIZES.find((s) => s.id === st.size)!.px;
+  const { hex, back } = subStyleColors(st);
+  const ff = (h: string) => `0x${h.slice(1)}`;
+  const y = { bottom: `h-text_h-${SUB_MARGIN}`, middle: "(h-text_h)/2", top: String(SUB_MARGIN) }[st.position];
+  const parts = [`drawtext=fontfile=/font.ttf:textfile=${textfile}:fontsize=${px}:fontcolor=${ff(hex)}`];
+  if (st.effect === "box") parts.push(`box=1:boxcolor=${ff(back)}@0.45:boxborderw=${Math.round(px * 0.38)}`);
+  if (st.effect === "outline") parts.push(`borderw=${Math.max(2, Math.round(px / 12))}:bordercolor=${ff(back)}@0.85`);
+  if (st.effect === "shadow") parts.push(`shadowcolor=${ff(back)}@0.6:shadowx=${Math.round(px / 16)}:shadowy=${Math.round(px / 16)}`);
+  parts.push(`x=(w-text_w)/2:y=${y}`);
+  return parts.join(":");
+}
 
 /**
  * 내장 배경음: ffmpeg aevalsrc로 즉석 합성한 단순 멜로디라 저작권 문제가 없다.
