@@ -73,8 +73,6 @@ function GroupDetailView({ groupId, klass, onBack }: { groupId: number; klass: K
   const [error, setError] = useState<string | null>(null);
   const [memo, setMemo] = useState("");
   const [tone, setTone] = useState<"warm" | "concise">("warm");
-  const [kind, setKind] = useState<"notice" | "subtitle">("notice");
-  const [subCount, setSubCount] = useState(4);
   const [generating, setGenerating] = useState(false);
   const [note, setNote] = useState<Note | null>(null);
   const [template, setTemplate] = useState("grid4");
@@ -104,7 +102,7 @@ function GroupDetailView({ groupId, klass, onBack }: { groupId: number; klass: K
     setGenerating(true);
     setError(null);
     try {
-      const n = await api<Note>(`/groups/${groupId}/note`, { method: "POST", json: { memo, tone, kind, subtitle_count: subCount } });
+      const n = await api<Note>(`/groups/${groupId}/note`, { method: "POST", json: { memo, tone, kind: "notice" } });
       setNote(n);
       setSaved(false);
     } catch (e) {
@@ -117,7 +115,7 @@ function GroupDetailView({ groupId, klass, onBack }: { groupId: number; klass: K
   async function saveNote() {
     if (!note) return;
     try {
-      const n = await api<Note>(`/notes/${note.id}`, { method: "PATCH", json: { title: note.title, body: note.body, subtitles: note.subtitles } });
+      const n = await api<Note>(`/notes/${note.id}`, { method: "PATCH", json: { title: note.title, body: note.body } });
       setNote({ ...n, warnings: note.warnings });
       setSaved(true);
     } catch (e) {
@@ -199,7 +197,7 @@ function GroupDetailView({ groupId, klass, onBack }: { groupId: number; klass: K
 
       <div className="grid gap-5 lg:grid-cols-2">
         <section className="card space-y-3 p-5">
-          <h2 className="font-semibold">학부모 전달 문구 초안</h2>
+          <h2 className="font-semibold">학부모 안내 문구 초안</h2>
           <div>
             <label className="label">활동 메모 (오늘 한 일, 특이사항)</label>
             <textarea
@@ -212,23 +210,15 @@ function GroupDetailView({ groupId, klass, onBack }: { groupId: number; klass: K
             <p className="mt-1 text-xs text-ink-3">아이 이름은 초안에 자동으로 넣지 않습니다. 필요하면 보내기 전에 직접 넣어 주세요.</p>
           </div>
           <div className="flex flex-wrap gap-3 text-sm">
-            <select className="input w-auto" value={kind} onChange={(e) => setKind(e.target.value as "notice" | "subtitle")}>
-              <option value="notice">알림장 문구</option>
-              <option value="subtitle">영상 자막</option>
-            </select>
             <select className="input w-auto" value={tone} onChange={(e) => setTone(e.target.value as "warm" | "concise")}>
               <option value="warm">따뜻한 말투</option>
               <option value="concise">간결한 말투</option>
             </select>
-            <label className="flex items-center gap-1.5 text-ink-2">
-              자막
-              <input type="number" min={1} max={20} className="input w-16" value={subCount} onChange={(e) => setSubCount(Number(e.target.value) || 1)} />
-              줄
-            </label>
             <button className="btn-primary" onClick={generate} disabled={generating}>
               {generating ? "작성 중…" : "초안 만들기"}
             </button>
           </div>
+          <p className="text-xs text-ink-3">영상 자막은 ‘영상 만들기’ 탭에서 클립을 넣은 뒤 만들고 고칠 수 있어요.</p>
         </section>
 
         <section className="card space-y-3 p-5">
@@ -247,29 +237,12 @@ function GroupDetailView({ groupId, klass, onBack }: { groupId: number; klass: K
               ))}
               <input className="input font-semibold" value={note.title} onChange={(e) => (setNote({ ...note, title: e.target.value }), setSaved(false))} aria-label="제목" />
               <textarea className="input h-32" value={note.body} onChange={(e) => (setNote({ ...note, body: e.target.value }), setSaved(false))} aria-label="본문" />
-              <div>
-                <label className="label">자막 (한 줄에 하나, 영상 만들기에서 클립 순서대로 들어갑니다)</label>
-                <textarea
-                  className="input h-24"
-                  value={note.subtitles.join("\n")}
-                  onChange={(e) => (setNote({ ...note, subtitles: e.target.value.split("\n") }), setSaved(false))}
-                />
-              </div>
               <div className="flex flex-wrap gap-2">
                 <button className="btn-primary" onClick={saveNote}>
                   {saved ? "저장됨" : "수정 저장"}
                 </button>
                 <button className="btn-ghost" onClick={() => navigator.clipboard.writeText(`${note.title}\n\n${note.body}`)}>
                   문구 복사
-                </button>
-                <button
-                  className="btn-ghost"
-                  onClick={() => {
-                    sessionStorage.setItem("kidslog:subtitles", JSON.stringify({ title: note.title, lines: note.subtitles.filter((s) => s.trim()) }));
-                    alert("자막을 ‘영상 만들기’ 탭으로 보냈습니다.");
-                  }}
-                >
-                  영상 자막으로 쓰기
                 </button>
               </div>
               {g.notes.length > 1 && (

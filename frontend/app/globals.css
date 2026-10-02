@@ -56,3 +56,29 @@ body {
 input[type="range"] {
   accent-color: var(--color-brand);
 }
+
+/* 자막 색 고르기의 색조 막대 */
+input[type="range"].hue-slider {
+  appearance: none;
+  height: 12px;
+  border-radius: 9999px;
+  background: linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
+}
+input[type="range"].hue-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+}
+input[type="range"].hue-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border: 0;
+  border-radius: 9999px;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+}

@@ -100,3 +100,48 @@ def _mock_draft(activity: str | None, date_str: str, memo: str, n: int) -> Draft
         subtitles=[f"{act} 시간 {i + 1}" for i in range(n)],
         provider="mock",
     )
+
+
+# ---- 영상 만들기 탭: 클립 자막 초안 (사진 정보 없이 선생님 메모만) ----
+
+SUBTITLE_PROMPT = """당신은 아이들의 활동 영상에 넣을 짧은 자막 초안을 쓰는 도우미입니다.
+초안은 선생님이 영상 만들기 화면에서 검토·수정한 뒤 씁니다.
+
+반드시 지킬 것:
+- 선생님 메모에 있는 사실만 씁니다. 없는 활동, 아이의 감정·성취·발언을 지어내지 않습니다.
+- 아이 이름이나 개인을 특정할 수 있는 정보는 쓰지 않습니다. 메모에 이름이 있어도 "아이들", "친구들"로 바꿉니다.
+- 과장된 표현과 이모지를 피합니다.
+- subtitles는 클립 순서대로 하나씩 들어갈 자막으로, 각 18자 이내의 짧은 문장입니다.
+- title은 영상 첫 화면과 썸네일에 들어갈 15자 이내 제목입니다."""
+
+
+@dataclass
+class SubtitleDraft:
+    title: str
+    subtitles: list[str]
+    provider: str
+
+
+def write_subtitles(*, memo: str, tone: str, count: int, provider: str) -> SubtitleDraft:
+    if provider != "claude":
+        first = memo.strip().splitlines()[0][:12] if memo.strip() else "오늘의 활동"
+        return SubtitleDraft(title=first, subtitles=[f"{first} {i + 1}" for i in range(count)], provider="mock")
+    out = structured_call(
+        system=SUBTITLE_PROMPT,
+        content=[
+            {
+                "type": "text",
+                "text": f"선생님 메모:\n{memo.strip()}\n\n말투: {TONES.get(tone, TONES['warm'])}\n"
+                f"클립 {count}개에 넣을 자막 {count}개와 제목을 써 주세요.",
+            }
+        ],
+        schema={
+            "type": "object",
+            "properties": {"title": {"type": "string"}, "subtitles": {"type": "array", "items": {"type": "string"}}},
+            "required": ["title", "subtitles"],
+            "additionalProperties": False,
+        },
+        effort="medium",
+    )
+    subs = [x.strip()[:40] for x in out["subtitles"] if x.strip()][:count]
+    return SubtitleDraft(title=out["title"].strip()[:30], subtitles=subs, provider="claude")

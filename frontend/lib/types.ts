@@ -89,3 +89,35 @@ export type VideoRecord = {
   user_agent: string;
   created_at: string;
 };
+
+/** 영상 편집 설정 (서버 자동 저장). 클립은 다시 넣을 때 맞춰 보기 위한 이름·크기만 */
+export type VideoDraftClip = { name: string; size: number; duration: number; subtitle: string };
+export type VideoDraftData = {
+  title: string;
+  max_sec: number;
+  font: string;
+  sub_style: { size: "s" | "m" | "l"; color: string; effect: "box" | "outline" | "shadow" | "plain"; position: "bottom" | "middle" | "top" | "custom"; at_x: number; at_y: number };
+  music: string;
+  music_file_name: string;
+  clips: VideoDraftClip[];
+};
+export type VideoDraft = { data: VideoDraftData | null; updated_at: string | null };
+
+/** 영상 만들기 탭의 AI 자막 초안 */
+export type SubtitleDraft = { title: string; subtitles: string[]; provider: string; warnings: string[] };
+
+/** 영상 만들기: 말로 한 편집 부탁의 결과 (바꿀 항목만, 나머지는 null) */
+export type VideoEditResult = {
+  reply: string;
+  title: string | null;
+  subtitles: { clip: number; text: string }[];
+  font: string | null;
+  size: string | null;
+  color: string | null;
+  effect: string | null;
+  position: string | null;
+  music: string | null;
+  max_sec: number | null;
+  provider: string;
+  warnings: string[];
+};

@@ -1,5 +1,6 @@
 "use client";
 
+import { CircleUserRound } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -11,18 +12,28 @@ export function AppHeader({ children }: { children?: React.ReactNode }) {
   return (
     <header className="border-b border-line bg-card">
       <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
-        <Link href="/classes" className="text-lg font-bold text-ink">
+        <Link href="/" className="text-lg font-bold text-ink" title="KidsLog 소개로">
           KidsLog
+        </Link>
+        <Link href="/classes" className="text-sm font-medium text-ink-2 hover:text-ink">
+          내 반
         </Link>
         <div className="min-w-0 flex-1 truncate text-sm text-ink-2">{children}</div>
         {user && (
           <div className="flex items-center gap-2 text-sm">
-            <span className="hidden text-ink-2 sm:inline">{user.name} 선생님</span>
+            <Link
+              href="/profile"
+              className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-ink-2 transition-colors hover:bg-paper hover:text-ink"
+              title="내 프로필"
+            >
+              <CircleUserRound size={18} />
+              <span className="hidden sm:inline">{user.name} 선생님</span>
+            </Link>
             <button
               className="btn-ghost"
               onClick={async () => {
                 await logout();
-                router.replace("/login");
+                router.replace("/");
               }}
             >
               로그아웃

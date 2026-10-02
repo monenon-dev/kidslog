@@ -10,6 +10,8 @@ type AuthState = {
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
+  /** 프로필에서 이름을 바꿨을 때 화면 전체에 반영 */
+  updateUser: (u: User) => void;
 };
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -50,7 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   }, []);
 
-  return <AuthContext.Provider value={{ user, loading, login, signup, logout }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, loading, login, signup, logout, updateUser: setUser }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth(): AuthState {

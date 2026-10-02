@@ -1,4 +1,5 @@
 from datetime import date as Date, datetime
+from typing import Literal
 
 from pydantic import BaseModel, EmailStr, Field
 
@@ -18,6 +19,23 @@ class UserOut(BaseModel):
     id: int
     email: str
     name: str
+
+
+class ProfileIn(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+
+
+class PasswordIn(BaseModel):
+    current_password: str
+    new_password: str = Field(min_length=8, max_length=128)
+
+
+class ProfileStats(BaseModel):
+    class_count: int
+    photo_count: int
+    child_count: int
+    video_count: int
+    created_at: datetime
 
 
 class TokenOut(BaseModel):
@@ -225,3 +243,102 @@ class VideoIn(BaseModel):
 class VideoOut(VideoIn):
     id: int
     created_at: datetime
+
+
+# ---- 영상 편집 설정 (영상 파일은 받지 않음) ----
+
+
+class DraftClip(BaseModel):
+    name: str = Field(max_length=255)
+    size: int = Field(ge=0)
+    duration: float = Field(ge=0, le=36000)
+    subtitle: str = Field(default="", max_length=40)
+
+
+class DraftSubStyle(BaseModel):
+    size: Literal["s", "m", "l"] = "m"
+    color: str = Field(default="#FFFFFF", pattern=r"^#[0-9A-Fa-f]{6}$")
+    effect: Literal["box", "outline", "shadow", "plain"] = "box"
+    position: Literal["bottom", "middle", "top", "custom"] = "bottom"
+    at_x: float = Field(default=0.5, ge=0, le=1)
+    at_y: float = Field(default=0.85, ge=0, le=1)
+
+
+class VideoDraftData(BaseModel):
+    title: str = Field(default="", max_length=30)
+    max_sec: int = Field(default=15, ge=3, le=60)
+    font: str = Field(default="jua", max_length=30)
+    sub_style: DraftSubStyle = DraftSubStyle()
+    music: str = Field(default="bright", max_length=20)
+    music_file_name: str = Field(default="", max_length=255)
+    clips: list[DraftClip] = Field(default_factory=list, max_length=15)
+
+
+class VideoDraftOut(BaseModel):
+    data: VideoDraftData | None
+    updated_at: datetime | None
+
+
+class SubtitleIn(BaseModel):
+    memo: str = Field(min_length=1, max_length=2000)
+    tone: str = Field(default="warm", pattern="^(warm|concise)$")
+    count: int = Field(ge=1, le=15)
+    class_id: int | None = None  # 있으면 그 반 명단 이름이 들어갔는지 확인
+
+
+class SubtitleOut(BaseModel):
+    title: str
+    subtitles: list[str]
+    provider: str
+    warnings: list[str] = []
+
+
+# ---- 영상 만들기: 말로 하는 편집 부탁 ----
+
+
+class EditClipState(BaseModel):
+    subtitle: str = Field(default="", max_length=40)
+    seconds: float = Field(ge=0, le=36000)
+
+
+class EditStyleState(BaseModel):
+    size: Literal["s", "m", "l"] = "m"
+    color: str = Field(default="#FFFFFF", pattern=r"^#[0-9A-Fa-f]{6}$")
+    effect: Literal["box", "outline", "shadow", "plain"] = "box"
+    position: Literal["bottom", "middle", "top", "custom"] = "bottom"
+
+
+class EditState(BaseModel):
+    title: str = Field(default="", max_length=30)
+    max_sec: int = Field(default=15, ge=3, le=60)
+    font: str = Field(default="jua", max_length=30)
+    style: EditStyleState = Field(default_factory=EditStyleState)
+    music: str = Field(default="bright", max_length=20)
+    clips: list[EditClipState] = Field(default_factory=list, max_length=15)
+
+
+class VideoEditIn(BaseModel):
+    instruction: str = Field(min_length=1, max_length=500)
+    state: EditState
+    current: int = Field(default=1, ge=1)  # 지금 보고 있는 클립 (1부터)
+    class_id: int | None = None
+
+
+class SubtitleChange(BaseModel):
+    clip: int
+    text: str
+
+
+class VideoEditOut(BaseModel):
+    reply: str
+    title: str | None = None
+    subtitles: list[SubtitleChange] = []
+    font: str | None = None
+    size: str | None = None
+    color: str | None = None
+    effect: str | None = None
+    position: str | None = None
+    music: str | None = None
+    max_sec: int | None = None
+    provider: str
+    warnings: list[str] = []

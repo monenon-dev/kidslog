@@ -200,3 +200,24 @@ class Video(Base):
     resolution: Mapped[str] = mapped_column(String(20), default="1280x720")
     user_agent: Mapped[str] = mapped_column(String(300), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class VideoDraft(Base):
+    """영상 편집 설정(제목·클립 순서·자막·꾸밈·음악 선택). 반마다 하나.
+    영상 파일은 저장하지 않고, 클립은 다시 넣었을 때 맞춰 보기 위한 파일 이름·크기만 둔다."""
+
+    __tablename__ = "video_drafts"
+
+    class_id: Mapped[int] = mapped_column(ForeignKey("classes.id", ondelete="CASCADE"), primary_key=True)
+    data_json: Mapped[str] = mapped_column(Text, default="{}")
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
+class UserVideoDraft(Base):
+    """반 없이 따로 만드는 영상의 편집 설정. 사용자마다 하나 (형식은 VideoDraft와 같음)."""
+
+    __tablename__ = "user_video_drafts"
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    data_json: Mapped[str] = mapped_column(Text, default="{}")
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)

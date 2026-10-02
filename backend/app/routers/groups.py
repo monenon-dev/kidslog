@@ -1,4 +1,5 @@
 import json
+import re
 import uuid
 from collections import defaultdict
 from datetime import date
@@ -9,7 +10,8 @@ from sqlalchemy.orm import Session
 
 from .. import album, models, schemas
 from ..ai.llm import LLMError
-from ..ai.writer import write_draft
+from ..ai.video_editor import edit_video
+from ..ai.writer import write_draft, write_subtitles
 from ..config import get_settings
 from ..db import get_db
 from ..deps import current_user, owned_class, owned_group
@@ -253,3 +255,117 @@ def list_videos(class_id: int, user: models.User = Depends(current_user), db: Se
         )
         for v in vs
     ]
+
+
+# ---- 영상 편집 설정 (반마다 하나, 자동 저장) ----
+
+
+@router.get("/classes/{class_id}/video-draft", response_model=schemas.VideoDraftOut)
+def get_video_draft(class_id: int, user: models.User = Depends(current_user), db: Session = Depends(get_db)):
+    owned_class(class_id, user, db)
+    d = db.get(models.VideoDraft, class_id)
+    if d is None:
+        return schemas.VideoDraftOut(data=None, updated_at=None)
+    return schemas.VideoDraftOut(data=schemas.VideoDraftData.model_validate_json(d.data_json), updated_at=d.updated_at)
+
+
+@router.put("/classes/{class_id}/video-draft", response_model=schemas.VideoDraftOut)
+def put_video_draft(
+    class_id: int, body: schemas.VideoDraftData, user: models.User = Depends(current_user), db: Session = Depends(get_db)
+):
+    owned_class(class_id, user, db)
+    d = db.get(models.VideoDraft, class_id)
+    if d is None:
+        d = models.VideoDraft(class_id=class_id)
+        db.add(d)
+    d.data_json = body.model_dump_json()
+    d.updated_at = models.utcnow()
+    db.commit()
+    return schemas.VideoDraftOut(data=body, updated_at=d.updated_at)
+
+
+@router.delete("/classes/{class_id}/video-draft", status_code=204)
+def delete_video_draft(class_id: int, user: models.User = Depends(current_user), db: Session = Depends(get_db)):
+    owned_class(class_id, user, db)
+    d = db.get(models.VideoDraft, class_id)
+    if d is not None:
+        db.delete(d)
+        db.commit()
+
+
+# ---- 반 없이 따로 만드는 영상의 편집 설정 (사용자마다 하나) ----
+
+
+@router.get("/video-draft", response_model=schemas.VideoDraftOut)
+def get_my_video_draft(user: models.User = Depends(current_user), db: Session = Depends(get_db)):
+    d = db.get(models.UserVideoDraft, user.id)
+    if d is None:
+        return schemas.VideoDraftOut(data=None, updated_at=None)
+    return schemas.VideoDraftOut(data=schemas.VideoDraftData.model_validate_json(d.data_json), updated_at=d.updated_at)
+
+
+@router.put("/video-draft", response_model=schemas.VideoDraftOut)
+def put_my_video_draft(body: schemas.VideoDraftData, user: models.User = Depends(current_user), db: Session = Depends(get_db)):
+    d = db.get(models.UserVideoDraft, user.id)
+    if d is None:
+        d = models.UserVideoDraft(user_id=user.id)
+        db.add(d)
+    d.data_json = body.model_dump_json()
+    d.updated_at = models.utcnow()
+    db.commit()
+    return schemas.VideoDraftOut(data=body, updated_at=d.updated_at)
+
+
+# ---- 영상 자막 초안 (영상 만들기 화면에서만 만든다) ----
+
+
+@router.post("/video-subtitles", response_model=schemas.SubtitleOut)
+def draft_subtitles(body: schemas.SubtitleIn, user: models.User = Depends(current_user), db: Session = Depends(get_db)):
+    if body.class_id is not None:
+        owned_class(body.class_id, user, db)
+    try:
+        d = write_subtitles(memo=body.memo, tone=body.tone, count=body.count, provider=get_settings().resolved_ai_provider)
+    except LLMError as e:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(e))
+    warnings = _name_warnings(db, body.class_id, [d.title, *d.subtitles]) if body.class_id is not None else []
+    return schemas.SubtitleOut(title=d.title, subtitles=d.subtitles, provider=d.provider, warnings=warnings)
+
+
+@router.post("/video-edit", response_model=schemas.VideoEditOut)
+def video_edit(body: schemas.VideoEditIn, user: models.User = Depends(current_user), db: Session = Depends(get_db)):
+    """말로 한 편집 부탁 → 바꿀 설정만 돌려준다 (적용은 브라우저에서, 영상은 받지 않음)."""
+    if body.class_id is not None:
+        owned_class(body.class_id, user, db)
+    provider = get_settings().resolved_ai_provider
+    n = len(body.state.clips)
+    current = min(body.current, max(n, 1))
+    try:
+        out = edit_video(instruction=body.instruction, state=body.state.model_dump(), current=current, provider=provider)
+    except LLMError as e:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(e))
+    # AI 응답을 그대로 믿지 않고 범위·형식을 한 번 더 거른다
+    subs = {}
+    for c in out.get("subtitles") or []:
+        if 1 <= int(c["clip"]) <= n:
+            subs[int(c["clip"])] = str(c["text"]).strip()[:40]
+    color = out.get("color")
+    if color and not re.fullmatch(r"#[0-9A-Fa-f]{6}", color):
+        color = None
+    max_sec = out.get("max_sec")
+    title = out.get("title")
+    res = schemas.VideoEditOut(
+        reply=str(out.get("reply") or "").strip() or "바꿀 내용을 찾지 못했어요.",
+        title=title.strip()[:30] if isinstance(title, str) else None,
+        subtitles=[schemas.SubtitleChange(clip=k, text=v) for k, v in sorted(subs.items())],
+        font=out.get("font"),
+        size=out.get("size"),
+        color=color.upper() if color else None,
+        effect=out.get("effect"),
+        position=out.get("position"),
+        music=out.get("music"),
+        max_sec=min(60, max(3, int(max_sec))) if isinstance(max_sec, int) else None,
+        provider="claude" if provider == "claude" else "mock",
+    )
+    if body.class_id is not None:
+        res.warnings = _name_warnings(db, body.class_id, [res.title or "", *(s.text for s in res.subtitles)])
+    return res

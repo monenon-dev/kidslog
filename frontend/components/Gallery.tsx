@@ -107,11 +107,8 @@ export function Gallery({ klass }: { klass: Klass }) {
   const childName = new Map(klass.children.map((c) => [c.id, c.name]));
   const activityTags = tags?.all ?? [];
   const hasFilter = Object.values(filters).some(Boolean);
-  // 사진이 하나도 없으면 폭을 좁혀 화면 가운데에 모은다
-  const noPhotos = !loading && photos.length === 0 && !hasFilter;
-
   return (
-    <div className={`space-y-4 ${noPhotos ? "mx-auto max-w-2xl" : ""}`}>
+    <div className="space-y-4">
       <Uploader classId={klass.id} onQueued={() => load()} />
 
       <div className="flex flex-wrap items-end gap-2">
@@ -281,7 +278,7 @@ export function Gallery({ klass }: { klass: Klass }) {
             }}
           />
         ) : (
-          <>
+          <div className="grid items-start gap-4 lg:grid-cols-[1fr_340px]">
             <EmptyState icon={Images} title="아직 사진이 없습니다" description="위에서 사진을 올리면 AI가 활동별로 태그를 달고 잘 나온 사진을 골라 줍니다." />
             <TipCard
               title="이렇게 활용해보세요"
@@ -291,7 +288,7 @@ export function Gallery({ klass }: { klass: Klass }) {
                 { icon: Tag, text: "사진에 아이 이름을 태그하면 ‘아이별 균형’ 탭에서 통계를 볼 수 있어요" },
               ]}
             />
-          </>
+          </div>
         ))}
       {photos.length < total && (
         <div className="text-center">

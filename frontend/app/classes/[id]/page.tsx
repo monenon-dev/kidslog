@@ -11,10 +11,10 @@ import { api } from "@/lib/api";
 import type { Klass } from "@/lib/types";
 
 const TABS = [
-  { id: "gallery", label: "사진" },
   { id: "balance", label: "아이별 균형" },
-  { id: "groups", label: "묶음·문구" },
+  { id: "gallery", label: "사진" },
   { id: "video", label: "영상 만들기" },
+  { id: "groups", label: "묶음·문구" },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
@@ -23,7 +23,7 @@ function Workspace() {
   const classId = Number(id);
   const search = useSearchParams();
   const router = useRouter();
-  const tab = (TABS.find((t) => t.id === search.get("tab"))?.id ?? "gallery") as TabId;
+  const tab = (TABS.find((t) => t.id === search.get("tab"))?.id ?? "balance") as TabId;
   const [klass, setKlass] = useState<Klass | null>(null);
   const [error, setError] = useState<string | null>(null);
 

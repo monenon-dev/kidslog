@@ -1,6 +1,6 @@
 import jwt
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from .. import models, schemas
@@ -76,3 +76,36 @@ def logout(response: Response):
 @router.get("/me", response_model=schemas.UserOut)
 def me(user: models.User = Depends(current_user)):
     return schemas.UserOut(id=user.id, email=user.email, name=user.name)
+
+
+# ---- 프로필 ----
+
+
+@router.patch("/me", response_model=schemas.UserOut)
+def update_me(body: schemas.ProfileIn, user: models.User = Depends(current_user), db: Session = Depends(get_db)):
+    user.name = body.name.strip()
+    if not user.name:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "이름을 입력해 주세요")
+    db.commit()
+    return schemas.UserOut(id=user.id, email=user.email, name=user.name)
+
+
+@router.post("/password", status_code=204)
+def change_password(body: schemas.PasswordIn, user: models.User = Depends(current_user), db: Session = Depends(get_db)):
+    if not verify_password(body.current_password, user.password_hash):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "지금 비밀번호가 맞지 않습니다")
+    user.password_hash = hash_password(body.new_password)
+    db.commit()
+
+
+@router.get("/me/stats", response_model=schemas.ProfileStats)
+def my_stats(user: models.User = Depends(current_user), db: Session = Depends(get_db)):
+    class_ids = select(models.Klass.id).where(models.Klass.owner_id == user.id)
+    count = lambda model: db.scalar(select(func.count()).select_from(model).where(model.class_id.in_(class_ids))) or 0  # noqa: E731
+    return schemas.ProfileStats(
+        class_count=db.scalar(select(func.count()).select_from(models.Klass).where(models.Klass.owner_id == user.id)) or 0,
+        photo_count=count(models.Photo),
+        child_count=count(models.Child),
+        video_count=count(models.Video),
+        created_at=user.created_at,
+    )

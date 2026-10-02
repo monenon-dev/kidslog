@@ -3,7 +3,7 @@
 import { Film } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useAuth } from "./AuthProvider";
 import { FilmFrames } from "./FilmFrames";
 
@@ -16,10 +16,6 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    if (user) router.replace("/classes");
-  }, [user, router]);
-
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -27,6 +23,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
     try {
       if (mode === "login") await login(email, password);
       else await signup(email, password, name);
+      router.replace("/classes");
     } catch (err) {
       setError(err instanceof Error ? err.message : "오류가 발생했습니다");
     } finally {
@@ -46,14 +43,22 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
           </p>
         </div>
         <div className="mx-auto w-full max-w-sm">
-          <div className="flex items-center gap-3">
+          <Link href="/" className="flex w-fit items-center gap-3" title="KidsLog 소개로">
             <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand text-ink shadow-sm">
               <Film size={26} strokeWidth={2} />
             </span>
             <h1 className="text-3xl font-bold tracking-tight text-ink sm:text-4xl">KidsLog</h1>
-          </div>
+          </Link>
           <p className="mt-3 break-keep text-sm text-ink-2">찍은 사진·영상을 정리하고, 학부모에게 보낼 영상과 문구를 빠르게.</p>
-          <form onSubmit={submit} className="card mt-8 space-y-4 p-6 shadow-[0_8px_24px_rgba(0,0,0,0.06)]">
+          {user && (
+            <p className="mt-6 break-keep rounded-lg bg-card/80 px-3 py-2 text-sm text-ink-2">
+              지금 {user.name} 선생님으로 로그인되어 있어요.{" "}
+              <Link href="/classes" className="font-medium text-brand-ink underline">
+                내 반으로 가기
+              </Link>
+            </p>
+          )}
+          <form onSubmit={submit} className={`card space-y-4 p-6 shadow-[0_8px_24px_rgba(0,0,0,0.06)] ${user ? "mt-3" : "mt-8"}`}>
             <h2 className="text-lg font-semibold">{mode === "login" ? "로그인" : "회원가입"}</h2>
             {mode === "signup" && (
               <div>

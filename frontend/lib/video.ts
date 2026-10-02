@@ -28,13 +28,15 @@ export const SUB_SIZES = [
   { id: "m", label: "보통", px: 52 },
   { id: "l", label: "크게", px: 66 },
 ] as const;
+/** 빠른 선택용 글자색. 그 밖의 색은 컬러 박스로 고른다 */
 export const SUB_COLORS = [
-  { id: "white", label: "흰색", hex: "#FFFFFF" },
-  { id: "yellow", label: "노랑", hex: "#FFE066" },
-  { id: "amber", label: "주황", hex: "#F2A531" },
-  { id: "mint", label: "민트", hex: "#8EE3C8" },
-  { id: "pink", label: "분홍", hex: "#FFB3C7" },
-  { id: "ink", label: "검정", hex: "#2B2824" },
+  { label: "흰색", hex: "#FFFFFF" },
+  { label: "노랑", hex: "#FFE066" },
+  { label: "주황", hex: "#F2A531" },
+  { label: "민트", hex: "#8EE3C8" },
+  { label: "하늘", hex: "#9AD0F5" },
+  { label: "분홍", hex: "#FFB3C7" },
+  { label: "검정", hex: "#2B2824" },
 ] as const;
 export const SUB_EFFECTS = [
   { id: "box", label: "배경 상자" },
@@ -51,17 +53,22 @@ export const SUB_MARGIN = 56;
 
 export type SubStyle = {
   size: (typeof SUB_SIZES)[number]["id"];
-  color: (typeof SUB_COLORS)[number]["id"];
+  /** #RRGGBB */
+  color: string;
   effect: (typeof SUB_EFFECTS)[number]["id"];
-  position: (typeof SUB_POSITIONS)[number]["id"];
+  /** 프리셋 위치, 또는 미리보기에서 끌어 옮긴 "custom" */
+  position: (typeof SUB_POSITIONS)[number]["id"] | "custom";
+  /** position이 custom일 때 자막 가운데 좌표 (화면 폭·높이 대비 0~1) */
+  at: { x: number; y: number };
 };
-export const DEFAULT_SUB_STYLE: SubStyle = { size: "m", color: "white", effect: "box", position: "bottom" };
+export const DEFAULT_SUB_STYLE: SubStyle = { size: "m", color: "#FFFFFF", effect: "box", position: "bottom", at: { x: 0.5, y: 0.85 } };
 
 /** 글자색이 어두우면 테두리·상자·그림자는 밝게 뒤집는다 */
 export function subStyleColors(st: SubStyle) {
-  const hex = SUB_COLORS.find((c) => c.id === st.color)!.hex;
-  const dark = st.color === "ink";
-  return { hex, back: dark ? "#FFFFFF" : "#000000" };
+  const hex = st.color.toUpperCase();
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  const dark = 0.299 * r + 0.587 * g + 0.114 * b < 110;
+  return { hex, back: dark ? "#FFFFFF" : "#000000", dark };
 }
 
 /** ffmpeg drawtext 필터 (fontfile·textfile은 ffmpeg 가상 파일 경로) */
@@ -69,12 +76,20 @@ export function subtitleFilter(st: SubStyle, textfile: string): string {
   const px = SUB_SIZES.find((s) => s.id === st.size)!.px;
   const { hex, back } = subStyleColors(st);
   const ff = (h: string) => `0x${h.slice(1)}`;
-  const y = { bottom: `h-text_h-${SUB_MARGIN}`, middle: "(h-text_h)/2", top: String(SUB_MARGIN) }[st.position];
+  let x = "(w-text_w)/2";
+  let y: string;
+  if (st.position === "custom") {
+    // 가운데 좌표 기준, 화면 밖으로 나가지 않게 자른다 (쉼표가 있어 작은따옴표로 감싼다)
+    x = `'max(0,min(w-text_w,w*${st.at.x.toFixed(4)}-text_w/2))'`;
+    y = `'max(0,min(h-text_h,h*${st.at.y.toFixed(4)}-text_h/2))'`;
+  } else {
+    y = { bottom: `h-text_h-${SUB_MARGIN}`, middle: "(h-text_h)/2", top: String(SUB_MARGIN) }[st.position];
+  }
   const parts = [`drawtext=fontfile=/font.ttf:textfile=${textfile}:fontsize=${px}:fontcolor=${ff(hex)}`];
   if (st.effect === "box") parts.push(`box=1:boxcolor=${ff(back)}@0.45:boxborderw=${Math.round(px * 0.38)}`);
   if (st.effect === "outline") parts.push(`borderw=${Math.max(2, Math.round(px / 12))}:bordercolor=${ff(back)}@0.85`);
   if (st.effect === "shadow") parts.push(`shadowcolor=${ff(back)}@0.6:shadowx=${Math.round(px / 16)}:shadowy=${Math.round(px / 16)}`);
-  parts.push(`x=(w-text_w)/2:y=${y}`);
+  parts.push(`x=${x}:y=${y}`);
   return parts.join(":");
 }
 

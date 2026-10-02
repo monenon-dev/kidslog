@@ -1,6 +1,6 @@
 "use client";
 
-import { FolderPlus, ImageUp, Sparkles, Users } from "lucide-react";
+import { Clapperboard, FolderPlus, ImageUp, Sparkles, Users } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AppHeader, RequireAuth } from "@/components/AppHeader";
@@ -41,6 +41,18 @@ function ClassList() {
             <button className="btn-primary shrink-0">반 만들기</button>
           </form>
           {error && <p className="mt-2 text-sm text-bad">{error}</p>}
+          <Link
+            href="/video"
+            className="mt-6 flex max-w-xl items-center gap-4 rounded-xl border border-dashed border-brand/50 bg-brand-soft/40 p-4 transition-colors hover:border-brand hover:bg-brand-soft/70"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-card text-brand">
+              <Clapperboard size={19} />
+            </span>
+            <div className="min-w-0">
+              <div className="font-semibold">반 없이 영상만 만들기</div>
+              <div className="break-keep text-sm text-ink-2">명단·사진 정리 없이 클립만 넣어 자막과 음악을 얹어요.</div>
+            </div>
+          </Link>
           {classes?.length !== 0 && (
             <ul className="mt-6 grid gap-3 sm:grid-cols-2">
               {classes === null && <li className="text-sm text-ink-3">불러오는 중…</li>}

@@ -46,6 +46,15 @@ def test_full_flow():
     assert client.post("/auth/refresh").status_code == 200
     assert client.post("/auth/login", json={"email": "t@example.com", "password": "wrong-pass"}).status_code == 401
 
+    # 프로필: 이름 바꾸기, 비밀번호 바꾸기, 요약
+    h0 = {"Authorization": f"Bearer {r.json()['access_token']}"}
+    assert client.patch("/auth/me", json={"name": "  새 이름 "}, headers=h0).json()["name"] == "새 이름"
+    assert client.post("/auth/password", json={"current_password": "wrong-pass", "new_password": "newpass123"}, headers=h0).status_code == 400
+    assert client.post("/auth/password", json={"current_password": "password123", "new_password": "newpass123"}, headers=h0).status_code == 204
+    assert client.post("/auth/login", json={"email": "t@example.com", "password": "newpass123"}).status_code == 200
+    assert client.post("/auth/password", json={"current_password": "newpass123", "new_password": "password123"}, headers=h0).status_code == 204
+    assert client.get("/auth/me/stats", headers=h0).json()["class_count"] == 0
+
     # 반 + 아이 명단
     k = client.post("/classes", json={"name": "햇살반"}, headers=h).json()
     kids = client.post(f"/classes/{k['id']}/children", json={"names": ["가온", "나래", "다온"]}, headers=h).json()
@@ -129,11 +138,55 @@ def test_full_flow():
     assert v.status_code == 201
     assert len(client.get(f"/videos?class_id={k['id']}", headers=h).json()) == 1
 
+    # 영상 편집 설정 자동 저장 (파일은 이름·크기만)
+    assert client.get(f"/classes/{k['id']}/video-draft", headers=h).json()["data"] is None
+    draft = {
+        "title": "가을 숲",
+        "max_sec": 10,
+        "font": "gaegu",
+        "sub_style": {"size": "l", "color": "#7CF0FF", "effect": "outline", "position": "custom", "at_x": 0.3, "at_y": 0.35},
+        "music": "calm",
+        "clips": [{"name": "a.mp4", "size": 1234, "duration": 3.2, "subtitle": "도토리를 찾았어요"}],
+    }
+    assert client.put(f"/classes/{k['id']}/video-draft", json=draft, headers=h).status_code == 200
+    got = client.get(f"/classes/{k['id']}/video-draft", headers=h).json()["data"]
+    assert got["clips"][0]["subtitle"] == "도토리를 찾았어요" and got["sub_style"]["at_x"] == 0.3
+    bad = {**draft, "sub_style": {**draft["sub_style"], "color": "red"}}
+    assert client.put(f"/classes/{k['id']}/video-draft", json=bad, headers=h).status_code == 422
+
+    # 반 없이 만드는 영상의 편집 설정 (사용자마다 하나)
+    assert client.get("/video-draft", headers=h).json()["data"] is None
+    assert client.put("/video-draft", json=draft, headers=h).status_code == 200
+    assert client.get("/video-draft", headers=h).json()["data"]["title"] == "가을 숲"
+
+    # 자막 초안은 영상 만들기에서 메모로 만든다
+    s = client.post("/video-subtitles", json={"memo": "숲에서 도토리 줍기", "count": 3, "class_id": k["id"]}, headers=h)
+    assert s.status_code == 200 and len(s.json()["subtitles"]) == 3
+    assert client.post("/video-subtitles", json={"memo": "", "count": 3}, headers=h).status_code == 422
+
+    # 말로 하는 편집 부탁 (AI 키 없으면 규칙 기반)
+    state = {"title": "", "clips": [{"subtitle": "", "seconds": 3}, {"subtitle": "", "seconds": 4}]}
+    e = client.post(
+        "/video-edit",
+        json={"instruction": "2번 자막을 '모래성 완성!'으로 바꾸고 글자는 노랗게, 위로 올려줘", "state": state, "current": 1},
+        headers=h,
+    ).json()
+    assert e["subtitles"] == [{"clip": 2, "text": "모래성 완성!"}]
+    assert e["color"] == "#FFE066" and e["position"] == "top"
+    e = client.post("/video-edit", json={"instruction": "자막 '도토리 찾기'", "state": state, "current": 1}, headers=h).json()
+    assert e["subtitles"] == [{"clip": 1, "text": "도토리 찾기"}]
+    e = client.post("/video-edit", json={"instruction": "배경음악 잔잔하게", "state": state}, headers=h).json()
+    assert e["music"] == "calm" and e["effect"] is None
+
     # 다른 사용자 접근 차단
     r = client.post("/auth/signup", json={"email": "other@example.com", "password": "password123", "name": "다른"})
     h2 = {"Authorization": f"Bearer {r.json()['access_token']}"}
     assert client.get(f"/photos/{ids[0]}", headers=h2).status_code == 404
     assert client.get(f"/groups/{outdoor['id']}", headers=h2).status_code == 404
+    assert client.get(f"/classes/{k['id']}/video-draft", headers=h2).status_code == 404
+    assert client.put(f"/classes/{k['id']}/video-draft", json=draft, headers=h2).status_code == 404
+    assert client.get("/video-draft", headers=h2).json()["data"] is None
+    assert client.post("/video-subtitles", json={"memo": "x", "count": 1, "class_id": k["id"]}, headers=h2).status_code == 404
 
     # 삭제
     assert client.delete(f"/photos/{ids[0]}", headers=h).status_code == 204
