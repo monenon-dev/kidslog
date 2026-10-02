@@ -30,12 +30,9 @@ function ClassList() {
     }
   }
 
-  // 반이 적을 때만 오른쪽에 시작 가이드를 둔다. 반이 많아지면 목록에 전체 폭을 준다.
-  const showGuide = (classes?.length ?? 0) < 3;
-
   return (
     <main className="mx-auto w-full max-w-6xl px-4 pb-12 pt-10 sm:pt-16">
-      <div className={`grid gap-8 rounded-2xl bg-card p-6 sm:p-10 ${showGuide ? "lg:grid-cols-[1fr_380px] lg:gap-12" : ""}`}>
+      <div className="grid gap-8 rounded-2xl bg-card p-6 sm:p-10 lg:grid-cols-[1fr_380px] lg:gap-12">
         <section className="min-w-0">
           <h1 className="text-2xl font-bold">내 반</h1>
           <p className="mt-1 break-keep text-sm text-ink-2">반을 만들고 사진을 올리면 AI가 활동별로 정리해드려요.</p>
@@ -45,7 +42,7 @@ function ClassList() {
           </form>
           {error && <p className="mt-2 text-sm text-bad">{error}</p>}
           {classes?.length !== 0 && (
-            <ul className={`mt-6 grid gap-3 sm:grid-cols-2 ${showGuide ? "" : "lg:grid-cols-3"}`}>
+            <ul className="mt-6 grid gap-3 sm:grid-cols-2">
               {classes === null && <li className="text-sm text-ink-3">불러오는 중…</li>}
               {classes?.map((k) => {
                 const empty = k.photo_count === 0 && k.children.length === 0;
@@ -76,21 +73,19 @@ function ClassList() {
           )}
         </section>
 
-        {showGuide && (
-          <aside className="flex flex-col gap-5 rounded-xl bg-gradient-to-br from-brand-soft via-paper to-accent-soft p-6">
-            <FilmFrames className="mx-auto w-full max-w-[260px]" />
-            <TipCard
-              tone="plain"
-              title="시작하는 방법"
-              numbered
-              items={[
-                { icon: FolderPlus, text: "반 만들기: 반 이름을 입력해 바로 만들어요" },
-                { icon: ImageUp, text: "사진 올리기: 반에 들어가 여러 장을 한 번에 올려요" },
-                { icon: Sparkles, text: "AI가 활동별로 묶고 잘 나온 사진을 골라 둔 결과를 확인해요" },
-              ]}
-            />
-          </aside>
-        )}
+        <aside className="flex flex-col gap-5 rounded-xl bg-gradient-to-br from-brand-soft via-paper to-accent-soft p-6">
+          <FilmFrames className="mx-auto w-full max-w-[260px]" />
+          <TipCard
+            tone="plain"
+            title="시작하는 방법"
+            numbered
+            items={[
+              { icon: FolderPlus, text: "반 만들기: 반 이름을 입력해 바로 만들어요" },
+              { icon: ImageUp, text: "사진 올리기: 반에 들어가 여러 장을 한 번에 올려요" },
+              { icon: Sparkles, text: "AI가 활동별로 묶고 잘 나온 사진을 골라 둔 결과를 확인해요" },
+            ]}
+          />
+        </aside>
       </div>
     </main>
   );
