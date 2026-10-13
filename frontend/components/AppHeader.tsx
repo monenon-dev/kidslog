@@ -4,6 +4,7 @@ import { CircleUserRound } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { DEMO } from "@/lib/demo/flag";
 import { forgetPrefs } from "@/lib/prefs";
 import { useAuth } from "./AuthProvider";
 import { NotificationBell } from "./NotificationBell";
@@ -32,16 +33,25 @@ export function AppHeader({ children }: { children?: React.ReactNode }) {
               <CircleUserRound size={18} />
               <span className="hidden sm:inline">{user.name} 선생님</span>
             </Link>
-            <button
-              className="btn-ghost"
-              onClick={async () => {
-                await logout();
-                forgetPrefs();
-                router.replace("/");
-              }}
-            >
-              로그아웃
-            </button>
+            {DEMO ? (
+              <span
+                className="rounded-full bg-brand-soft px-2.5 py-1 text-xs font-bold tracking-wide text-brand-ink"
+                title="샘플 데이터로 동작하는 데모 버전입니다"
+              >
+                DEMO
+              </span>
+            ) : (
+              <button
+                className="btn-ghost"
+                onClick={async () => {
+                  await logout();
+                  forgetPrefs();
+                  router.replace("/");
+                }}
+              >
+                로그아웃
+              </button>
+            )}
           </div>
         )}
       </div>

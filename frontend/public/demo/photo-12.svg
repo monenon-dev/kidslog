@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+<!-- KidsLog 데모 플레이스홀더 #12 (음악·율동, blur) — 실제 사진 아님 -->
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#EEE4F8"/><stop offset="1" stop-color="#ffffff"/></linearGradient>
+  <filter id="b"><feGaussianBlur stdDeviation="9"/></filter>
+</defs>
+<rect width="800" height="600" fill="url(#bg)"/>
+<g filter="url(#b)">
+  <g transform="translate(539.0094307270233 226.0735596707819) scale(0.9914609053497943)" fill="#B48EDB"><ellipse cx="0" cy="0" rx="26" ry="19" transform="rotate(-20)"/><rect x="20" y="-110" width="8" height="110"/><path d="M28 -110 q 40 20 30 60 q -5 -30 -30 -35z"/></g>
+  <g transform="translate(188.16246570644716 430.37345679012344) scale(1.2343389917695473)" fill="#7D55B8"><ellipse cx="0" cy="0" rx="26" ry="19" transform="rotate(-20)"/><rect x="20" y="-110" width="8" height="110"/><path d="M28 -110 q 40 20 30 60 q -5 -30 -30 -35z"/></g>
+  <g transform="translate(197.54698216735255 369.58076131687244) scale(0.9924948559670782)" fill="#F28FB1"><ellipse cx="0" cy="0" rx="26" ry="19" transform="rotate(-20)"/><rect x="20" y="-110" width="8" height="110"/><path d="M28 -110 q 40 20 30 60 q -5 -30 -30 -35z"/></g>
+  <g transform="translate(205.4963134430727 440.36213991769546) scale(1.1159284979423867)" fill="#B48EDB"><ellipse cx="0" cy="0" rx="26" ry="19" transform="rotate(-20)"/><rect x="20" y="-110" width="8" height="110"/><path d="M28 -110 q 40 20 30 60 q -5 -30 -30 -35z"/></g>
+  <g transform="translate(470.34379286694104 479.38425925925924) scale(1.2546399176954732)" fill="#7D55B8"><ellipse cx="0" cy="0" rx="26" ry="19" transform="rotate(-20)"/><rect x="20" y="-110" width="8" height="110"/><path d="M28 -110 q 40 20 30 60 q -5 -30 -30 -35z"/></g>
+  <path d="M0 154.3889317558299 C 200 60, 400 220, 800 100" stroke="#F28FB1" stroke-width="14" fill="none" opacity="0.7"/>
+</g>
+
+<text x="28" y="572" font-family="sans-serif" font-size="26" font-weight="700" fill="#00000055">DEMO · 음악·율동</text>
+</svg>

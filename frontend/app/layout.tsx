@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Noto_Sans_KR } from "next/font/google";
 import { AuthProvider } from "@/components/AuthProvider";
+import { DemoBanner } from "@/components/DemoBanner";
+import { DEMO } from "@/lib/demo/flag";
 import "./globals.css";
 
 const noto = Noto_Sans_KR({ subsets: ["latin"], weight: ["400", "500", "700"], variable: "--font-noto", display: "swap" });
@@ -14,6 +16,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ko" className={noto.variable}>
       <body className="min-h-screen font-sans antialiased">
+        {DEMO && <DemoBanner />}
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

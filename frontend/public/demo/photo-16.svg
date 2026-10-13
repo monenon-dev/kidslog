@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+<!-- KidsLog 데모 플레이스홀더 #16 (과학·탐구, normal) — 실제 사진 아님 -->
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#DDEFFA"/><stop offset="1" stop-color="#ffffff"/></linearGradient>
+  
+</defs>
+<rect width="800" height="600" fill="url(#bg)"/>
+<g>
+  <path d="M225.03858024691357 120 h80 v120 l90 200 h-260 l90 -200z" fill="#7EE0C3" stroke="#2E77B8" stroke-width="10" stroke-linejoin="round"/>
+  <circle cx="232.5707304526749" cy="103.0082304526749" r="23.351234567901237" fill="none" stroke="#5DADE2" stroke-width="6"/>
+  <circle cx="172.75977366255145" cy="261.64094650205766" r="18.210699588477368" fill="none" stroke="#5DADE2" stroke-width="6"/>
+  <circle cx="395.5877057613169" cy="119.71810699588477" r="16.58868312757202" fill="none" stroke="#5DADE2" stroke-width="6"/>
+  <circle cx="426.0545267489712" cy="257.2397119341564" r="9.151851851851852" fill="none" stroke="#5DADE2" stroke-width="6"/>
+  <circle cx="389.16023662551436" cy="294.20576131687244" r="18.56687242798354" fill="none" stroke="#5DADE2" stroke-width="6"/>
+  <circle cx="409.9048353909465" cy="90.61625514403292" r="19.500411522633744" fill="none" stroke="#5DADE2" stroke-width="6"/>
+  <circle cx="313.2883230452675" cy="226.47119341563786" r="18.61913580246914" fill="none" stroke="#5DADE2" stroke-width="6"/>
+  <circle cx="554.8621399176955" cy="256.3497513717421" r="80" fill="#ffffff88" stroke="#2E77B8" stroke-width="14"/>
+  <rect x="620" y="360" width="26" height="130" rx="10" fill="#2E77B8" transform="rotate(-40 633 425)"/>
+</g>
+
+<text x="28" y="572" font-family="sans-serif" font-size="26" font-weight="700" fill="#00000055">DEMO · 과학·탐구</text>
+</svg>

@@ -8,6 +8,7 @@ import { AppHeader, RequireAuth } from "@/components/AppHeader";
 import { useAuth } from "@/components/AuthProvider";
 import { SETTINGS_SECTIONS, SettingsPanel, type SettingsSection } from "@/components/SettingsPanel";
 import { api } from "@/lib/api";
+import { DEMO } from "@/lib/demo/flag";
 import { forgetPrefs } from "@/lib/prefs";
 import type { User } from "@/lib/types";
 
@@ -200,7 +201,7 @@ function Account() {
           </div>
           <span className="mx-1 w-px shrink-0 self-stretch bg-line lg:hidden" aria-hidden />
           {SETTINGS_SECTIONS.map((x) => item(x.id, x.label))}
-          <div className="hidden border-t border-line pt-3 lg:mt-4 lg:block">
+          <div className={`hidden border-t border-line pt-3 lg:mt-4 ${DEMO ? "" : "lg:block"}`}>
             <button
               type="button"
               className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-ink-2 hover:bg-card/70 hover:text-ink"

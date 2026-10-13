@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+<!-- KidsLog 데모 플레이스홀더 #8 (바깥놀이, dark) — 실제 사진 아님 -->
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#DDF2DC"/><stop offset="1" stop-color="#ffffff"/></linearGradient>
+  
+</defs>
+<rect width="800" height="600" fill="url(#bg)"/>
+<g>
+  <circle cx="615.5378943758574" cy="144.66023662551441" r="60" fill="#F7C948"/>
+  <ellipse cx="218.8503086419753" cy="600" rx="420" ry="193.36754115226339" fill="#7BC47F"/>
+  <ellipse cx="635.448816872428" cy="620" rx="380" ry="180.38130144032922" fill="#3E9A59"/>
+  <circle cx="496.40603566529495" cy="427.4865826474623" r="26.71388888888889" fill="#8FD3F4" stroke="#fff" stroke-width="6"/>
+  <circle cx="547.2136488340193" cy="455.76834705075447" r="24.775154320987653" fill="#8FD3F4" stroke="#fff" stroke-width="6"/>
+</g>
+<rect width="800" height="600" fill="#000" opacity="0.55"/>
+<text x="28" y="572" font-family="sans-serif" font-size="26" font-weight="700" fill="#00000055">DEMO · 바깥놀이</text>
+</svg>

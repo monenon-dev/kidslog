@@ -6,8 +6,10 @@ import {
   EyeOff,
   Film,
   FolderPlus,
+  GitBranch,
   HardDrive,
   ImageUp,
+  Info,
   Lock,
   PenLine,
   ScanFace,
@@ -20,6 +22,7 @@ import {
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
 import { FilmFrames } from "@/components/FilmFrames";
+import { DEMO, REPO_URL } from "@/lib/demo/flag";
 
 /** 대표 기능: 영상 편집 (넓은 카드) */
 const VIDEO_POINTS = [
@@ -69,7 +72,11 @@ const PRIVACY: { icon: LucideIcon; title: string; desc: string }[] = [
 
 export default function Home() {
   const { user } = useAuth();
-  const start = user ? { href: "/classes", label: "내 반으로 가기" } : { href: "/signup", label: "무료로 시작하기" };
+  const start = DEMO
+    ? { href: "/classes", label: "데모 둘러보기" }
+    : user
+      ? { href: "/classes", label: "내 반으로 가기" }
+      : { href: "/signup", label: "무료로 시작하기" };
 
   return (
     <div className="min-h-screen bg-paper">
@@ -92,12 +99,25 @@ export default function Home() {
             </a>
           </nav>
           <div className="ml-auto flex items-center gap-2 text-sm">
-            <Link href="/login" className="btn-ghost">
-              로그인
-            </Link>
-            <Link href="/signup" className="btn-primary">
-              회원가입
-            </Link>
+            {DEMO ? (
+              <>
+                <a href={REPO_URL} target="_blank" rel="noreferrer" className="btn-ghost">
+                  <GitBranch size={16} /> GitHub
+                </a>
+                <Link href="/classes" className="btn-primary">
+                  데모 둘러보기
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link href="/login" className="btn-ghost">
+                  로그인
+                </Link>
+                <Link href="/signup" className="btn-primary">
+                  회원가입
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -126,6 +146,17 @@ export default function Home() {
                 기능 둘러보기
               </a>
             </div>
+            {DEMO && (
+              <p className="mt-4 flex max-w-xl items-start gap-1.5 break-keep text-sm text-ink-2">
+                <Info size={16} className="mt-0.5 shrink-0 text-brand-ink" />
+                <span>
+                  샘플 데이터이며 서버로 전송되지 않습니다. 사진 올리기·영상 만들기도 이 브라우저 안에서만 동작해요.{" "}
+                  <a href={REPO_URL} target="_blank" rel="noreferrer" className="font-medium text-brand-ink underline underline-offset-2">
+                    소스 코드 보기
+                  </a>
+                </span>
+              </p>
+            )}
             <div className="mt-8 flex flex-wrap items-center gap-2 text-sm">
               <span className="mr-1 text-ink-3">아이들과 함께하는 곳이라면</span>
               {PLACES.map((p) => (

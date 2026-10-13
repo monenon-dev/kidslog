@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+<!-- KidsLog 데모 플레이스홀더 #5 (미술, normal) — 실제 사진 아님 -->
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FCE3C8"/><stop offset="1" stop-color="#ffffff"/></linearGradient>
+  
+</defs>
+<rect width="800" height="600" fill="url(#bg)"/>
+<g>
+  <circle cx="648.9410150891632" cy="310.74348422496575" r="78.83564814814815" fill="#F2A65A" opacity="0.85"/>
+  <circle cx="432.4554183813443" cy="247.12568587105625" r="31.22530864197531" fill="#E36B4F" opacity="0.85"/>
+  <circle cx="178.93278463648835" cy="512.4893689986283" r="56.80941358024691" fill="#5B8DEF" opacity="0.85"/>
+  <circle cx="155.039780521262" cy="410.1678669410151" r="60.58796296296296" fill="#F7D046" opacity="0.85"/>
+  <circle cx="627.443072702332" cy="123.49451303155007" r="67.56095679012346" fill="#F2A65A" opacity="0.85"/>
+  <circle cx="582.8093278463649" cy="275.80264060356654" r="42.72839506172839" fill="#E36B4F" opacity="0.85"/>
+  <path d="M131.17391117969822 391.1025377229081 Q 436.9675925925926 277.84293552812073 699.2594735939643 415.19418724279836" stroke="#E36B4F" stroke-width="28.750360082304528" fill="none" stroke-linecap="round"/>
+  <path d="M209.06207133058987 541.3245884773662 Q 452.2616598079561 127.96210562414267 647.2608024691358 525.55405521262" stroke="#5B8DEF" stroke-width="26.692695473251028" fill="none" stroke-linecap="round"/>
+  <path d="M243.67605452674897 497.05075445816186 Q 461.3314471879287 286.05452674897117 669.2719050068587 500.8187585733882" stroke="#F7D046" stroke-width="23.66898148148148" fill="none" stroke-linecap="round"/>
+</g>
+
+<text x="28" y="572" font-family="sans-serif" font-size="26" font-weight="700" fill="#00000055">DEMO · 미술</text>
+</svg>

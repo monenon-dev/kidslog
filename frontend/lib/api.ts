@@ -1,4 +1,7 @@
+import { DEMO } from "./demo/flag";
+
 // access 토큰은 메모리에만 두고, 새로고침 시 httpOnly refresh 쿠키로 다시 받는다.
+// 데모 모드(NEXT_PUBLIC_DEMO=true)에서는 네트워크 대신 lib/demo/handlers 의 메모리 상태를 쓴다.
 let accessToken: string | null = null;
 let refreshing: Promise<boolean> | null = null;
 
@@ -16,6 +19,7 @@ export function setAccessToken(t: string | null) {
 }
 
 export async function refreshAccess(): Promise<boolean> {
+  if (DEMO) return true;
   refreshing ??= (async () => {
     try {
       const r = await fetch("/api/auth/refresh", { method: "POST", credentials: "same-origin" });
@@ -42,6 +46,7 @@ async function errorMessage(r: Response): Promise<string> {
 }
 
 export async function api<T = unknown>(path: string, init: RequestInit & { json?: unknown } = {}): Promise<T> {
+  if (DEMO) return (await import("./demo/handlers")).demoApi<T>(path, init);
   const { json, ...rest } = init;
   const doFetch = () => {
     const headers = new Headers(rest.headers);
@@ -65,6 +70,7 @@ export async function api<T = unknown>(path: string, init: RequestInit & { json?
 
 /** 서명 URL로 스토리지에 직접 PUT (R2 또는 로컬). 실패 시 재시도. */
 export async function putToStorage(url: string, file: File, retries = 2): Promise<void> {
+  if (DEMO) return (await import("./demo/handlers")).demoPut(url, file);
   for (let attempt = 0; ; attempt++) {
     try {
       const r = await fetch(url, { method: "PUT", body: file, headers: { "Content-Type": file.type } });

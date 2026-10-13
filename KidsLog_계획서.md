@@ -1,9 +1,11 @@
 # KidsLog 프로젝트 계획서
 
 > 아동을 대상으로 한 사진·영상을 AI로 정리·편집하고, 학부모 전달용 영상과 문구까지 빠르게 만들어주는 웹 서비스
-> 작성일: 2026-09-28 / 상태: v0.5 (아동 대상 사진·영상 편집 도구로 정의 정리)
+> 작성일: 2026-09-28 / 상태: v0.6 (배포 도메인 kidslog.choseohee.com 확정)
+> 서비스 주소: https://kidslog.choseohee.com
 
 ### 변경 이력
+- v0.6 (2026-10-13): 개인 도메인 choseohee.com 구매. KidsLog는 서브 도메인 `kidslog.choseohee.com`으로 Vercel에 배포. 6장에 배포·도메인 구성 추가.
 - v0.5: 서비스 정의를 "아동 대상 사진·영상 편집 도구"로 다시 정리. 특정 기관(보육) 중심 표현을 걷어냄: 알림장 → 학부모 안내 문구, 교사·사범 → 선생님·강사, 원·도장 → 소속 기관, 활동 태그 예시 일반화. 영상 편집 설정 자동 저장·완성 영상 브라우저 보관 반영.
 - v0.4: 기관 유형(보육/태권도) 구분과 유형별 프리셋을 제거. "아동 대상 사진·영상 편집"으로 타깃을 하나로 통일.
 - v0.3: 1차 인터뷰 결과 반영. 시간이 가장 드는 작업이 영상 편집으로 보여 영상 합치기를 MVP에 포함하고, 아이별 사진 균형 보기를 추가. 카드뉴스 잔재 정리.
@@ -173,7 +175,7 @@ KidsLog는 PUMSAE와 **완전히 별개인 독립 서비스**다 (별도 저장�
 
 | 영역 | 선택 | 이유 |
 |---|---|---|
-| 프론트 | Next.js + TypeScript + Tailwind (Vercel) | 기존 프로젝트와 동일 |
+| 프론트 | Next.js + TypeScript + Tailwind (Vercel, `kidslog.choseohee.com`) | 기존 프로젝트와 동일 |
 | 백엔드 | FastAPI (Railway 또는 Cloud Run) | AI 파이프라인(Python) 작성 용이, 비동기 작업 처리 |
 | DB | PostgreSQL (Neon) + pgvector | 임베딩 저장·검색을 한 DB에서 |
 | 스토리지 | Cloudflare R2 (S3 호환, Presigned URL) | 이그레스 비용 부담이 적음 |
@@ -192,6 +194,40 @@ API → 작업 큐: 분석 작업 등록
 프론트: 상태 폴링/SSE로 진행률 표시
 ```
 백엔드를 거치지 않고 R2로 직접 올리므로 서버 부하와 타임아웃 문제를 피할 수 있다. 이것이 백엔드가 필요한 진짜 이유이기도 하다: **키 보호, 서명 발급, 분석 작업 관리, 결과 저장**.
+
+### 배포와 도메인
+
+개인 도메인 `choseohee.com`을 구매했고, KidsLog는 서브 도메인 **`kidslog.choseohee.com`** 으로 서비스한다. 루트 도메인(`choseohee.com`)과 다른 서브 도메인은 앞으로 다른 프로젝트·포트폴리오용으로 비워 둔다.
+
+| 주소 | 역할 | 배포처 |
+|---|---|---|
+| `https://kidslog.choseohee.com` | 사용자 접속 주소 (Next.js) | Vercel |
+| `https://kidslog.choseohee.com/api/*` | Next.js rewrite → FastAPI로 전달 | Vercel → 백엔드 |
+| 백엔드 기본 주소 (예: `*.up.railway.app`) | FastAPI. 브라우저가 직접 부르지 않음 | Railway 또는 Cloud Run |
+| R2 버킷 엔드포인트 | 사진 원본·썸네일 (서명 URL로 직접 PUT/GET) | Cloudflare R2 |
+
+```
+브라우저 ── https://kidslog.choseohee.com ──▶ Vercel(Next.js)
+   │                                            └─ /api/* rewrite ──▶ FastAPI (Railway/Cloud Run)
+   └── 서명 URL로 직접 PUT/GET ──▶ R2
+```
+
+**백엔드에 별도 도메인을 붙이지 않는 이유**: 브라우저는 같은 출처의 `/api`만 호출하고 Vercel이 백엔드로 넘기므로, refresh 쿠키가 `kidslog.choseohee.com` 1st-party 쿠키로 유지된다(SameSite·서드파티 쿠키 차단 문제 없음). 백엔드 로그·문서를 사람이 볼 일이 많아지면 그때 `api.kidslog.choseohee.com`을 추가한다.
+
+#### 설정 순서
+1. **Vercel 프로젝트 생성**: GitHub 저장소 연결, Root Directory = `frontend`, 프레임워크 Next.js. 환경변수 `API_URL` = 백엔드 기본 주소(https).
+2. **도메인 연결**: Vercel 프로젝트 → Settings → Domains에 `kidslog.choseohee.com` 추가.
+3. **DNS 레코드**: 도메인을 산 곳(또는 네임서버를 옮긴 곳)의 DNS에 `CNAME` 레코드 추가. 이름 `kidslog`, 값은 Vercel 화면이 알려주는 값(예: `cname.vercel-dns.com` 또는 프로젝트별 `*.vercel-dns-xxx.com`). DNS를 Cloudflare에서 관리한다면 프록시를 끄고 **DNS only(회색 구름)** 로 둔다. 그래야 Vercel이 SSL 인증서를 발급한다.
+4. **SSL 확인**: Vercel Domains 화면에서 "Valid Configuration" 확인. 인증서는 Vercel이 자동 발급·갱신.
+5. **백엔드 환경변수**: `CORS_ORIGINS=https://kidslog.choseohee.com`, `COOKIE_SECURE=true`, `JWT_SECRET`(새 긴 랜덤값), `DATABASE_URL`(Neon), `STORAGE_BACKEND=r2` + R2 키, `ANTHROPIC_API_KEY`.
+6. **R2 버킷 CORS**: 허용 Origin에 `https://kidslog.choseohee.com` 추가, 메서드 `PUT`·`GET`, 허용 헤더 `Content-Type`. 버킷은 비공개 유지.
+7. **점검**: 회원가입 → 로그인 → 새로고침 후에도 로그인 유지(refresh 쿠키) → 사진 업로드(R2 직접 PUT) → 분석 결과 표시 → 영상 만들기(ffmpeg 워커 로드)까지 실제 도메인에서 확인.
+
+#### 주의할 점
+- Vercel 기본 주소(`*.vercel.app`)도 계속 열려 있다. 공유·README·포트폴리오에는 `kidslog.choseohee.com`만 쓰고, 필요하면 Vercel에서 기본 주소를 커스텀 도메인으로 리다이렉트한다.
+- 프리뷰 배포(`*-git-*.vercel.app`)는 출처가 달라 R2 CORS에 걸려 업로드가 안 될 수 있다. 프리뷰에서 업로드까지 확인하려면 해당 Origin을 R2 CORS에 추가하거나, 프로덕션 도메인에서만 확인한다.
+- 실제 도메인으로 공개되므로 화면 상단 "실제 아동 사진 업로드 금지 (데모)" 안내와 하루 AI 호출 상한(`AI_DAILY_LIMIT`)은 반드시 켜 둔다.
+- 도메인 갱신일을 달력에 기록해 둔다(만료되면 서비스 주소와 포트폴리오 링크가 함께 끊긴다).
 
 ---
 
@@ -251,7 +287,7 @@ exports      (id, group_id, template_id, storage_key, created_at)
 | 3 | AI 태깅 + 품질 점수 + 아이별 수동 태그·균형 대시보드 | 업로드 사진에 태그·설명 자동 표시, 아이별 장수 표시, 정확도 1차 측정 |
 | 4 | 영상 합치기 (브라우저 처리) | 클립 합치기·음소거·배경음악·자막·썸네일 추천, 실제 기기에서 소요 시간 측정 |
 | 5 | 문구·자막 초안 생성 (+ 선택: 임베딩 검색) | 활동 메모 → 초안 → 수정 → 영상 자막에 반영 |
-| 6 | 평가·문서화·배포 정리 | 평가표, README, 시연 영상/스크린샷, Notion 정리 |
+| 6 | 평가·문서화·배포 정리 | 평가표, README, 시연 영상/스크린샷, Notion 정리, `kidslog.choseohee.com`에서 전체 흐름 동작 확인 |
 
 일정이 밀리면 **5주차의 선택 항목(임베딩 검색)과 배경음악·글꼴 종류**부터 줄인다. AI 태깅, 영상 합치기 성능 검증, 평가(3, 4, 6주차)는 줄이지 않는다. 4주차 영상 성능 측정이 실패하면 5주차에 서버 처리 전환 또는 범위 축소를 결정한다.
 

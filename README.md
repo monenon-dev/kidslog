@@ -2,7 +2,8 @@
 
 아동을 대상으로 한 사진·영상을 AI로 정리·편집하고, 학부모에게 보낼 영상과 안내 문구를 빠르게 만드는 웹 서비스.
 수업·체육·예술·돌봄·체험 활동 등 아이들과 함께하는 곳이면 기관 종류를 가리지 않는다.
-기획 근거와 범위는 [KidsLog_계획서.md](KidsLog_계획서.md) (v0.5) 참고.
+기획 근거와 범위는 [KidsLog_계획서.md](KidsLog_계획서.md) (v0.6) 참고.
+서비스 주소: https://kidslog.choseohee.com
 
 > **데모 서비스입니다. 실제 아동 사진·영상을 업로드하지 마세요.**
 
@@ -38,6 +39,29 @@ npm run dev
 - `ANTHROPIC_API_KEY` 가 없으면 **모의 분석**(색상 기반 휴리스틱)으로 동작한다. 화면 흐름 확인용이며 정확도 평가에는 쓰지 않는다.
 - 백엔드 위치가 다르면 프론트 실행 시 `API_URL=https://...` 지정.
 - 테스트: `cd backend && pytest`
+
+## 데모 모드 (백엔드 없이 프론트만)
+
+`NEXT_PUBLIC_DEMO=true` 로 빌드하면 백엔드 없이 Vercel만으로 모든 탭을 눌러볼 수 있다. 포트폴리오 공개용.
+
+```bash
+cd frontend
+NEXT_PUBLIC_DEMO=true npm run build && npm start      # Windows PowerShell: $env:NEXT_PUBLIC_DEMO="true"; npm run build; npm start
+```
+
+| 환경변수 | 설명 |
+|---|---|
+| `NEXT_PUBLIC_DEMO` | `true`면 데모 모드. 빌드할 때 값이 고정되므로 바꾸면 다시 빌드해야 한다. 없거나 다른 값이면 기존 동작(실제 API, JWT 로그인) 그대로 |
+| `API_URL` | 데모 모드에서는 필요 없음 (`/api` rewrite를 만들지 않음) |
+
+- `api()`·`putToStorage()`가 네트워크 대신 `lib/demo/handlers.ts`의 메모리 상태를 읽고 쓴다. 새로고침하면 `lib/demo/data.ts`의 샘플(연꽃반, 가상 이름 8명, 사진 20장, 묶음 2개)로 돌아간다. 브라우저 개발자 도구 Network 탭에 `/api` 요청이 나가지 않는다.
+- 로그인 없이 "데모 선생님"으로 시작하고, `/login`·`/signup`은 `/classes`로 보낸다. 헤더에는 로그아웃 대신 DEMO 표시.
+- 사진 올리기: 파일은 브라우저 object URL로만 쓰고, 2초 "분석 중" 뒤 미리 정한 태그로 완료된다. 문구·자막 초안과 "말로 편집"은 미리 만든 초안·규칙으로 답한다. 앨범 이미지는 canvas로 만든다.
+- 영상 만들기(ffmpeg.wasm)는 실제로 동작한다. 처리 기록(`/videos`)은 남기지 않는다. ffmpeg core와 자막 글꼴은 CDN(unpkg, jsDelivr)에서 받는다.
+- 비밀번호 변경·계정 삭제는 "데모에서는 할 수 없는 기능" 안내.
+- 샘플 사진은 `scripts/gen-demo-images.mjs`로 만든 추상 SVG(`public/demo/photo-NN.svg`)다. 실제 아동 사진은 쓰지 않는다. CC0 이미지로 바꾸려면 같은 번호로 `photo-NN.jpg`를 넣고 `lib/demo/data.ts`의 `DEMO_IMG_EXT`를 `"jpg"`로.
+
+**Vercel 배포**: 프로젝트 Root Directory를 `frontend`로 두고 환경변수 `NEXT_PUBLIC_DEMO=true` 하나만 설정한다. 백엔드·DB·R2 설정은 필요 없다. 도메인 연결은 계획서 6장 "배포와 도메인" 참고.
 
 ## MVP 기능 (계획서 3장 대응)
 
@@ -92,9 +116,10 @@ python -m eval.run_eval --images ... --labels ... --model claude-sonnet-5-5   # 
 
 ## 배포 메모
 
-- 프론트: Vercel. 환경변수 `API_URL` = 백엔드 주소.
-- 백엔드: Railway / Cloud Run. `DATABASE_URL`(Neon, `pip install psycopg[binary]`), `JWT_SECRET`, `COOKIE_SECURE=true`, `STORAGE_BACKEND=r2` + R2 키, `ANTHROPIC_API_KEY`.
-- R2 버킷은 비공개로 두고, 브라우저 직접 업로드를 위해 버킷 CORS에 프론트 도메인의 `PUT`(헤더 `Content-Type`)과 `GET`을 허용.
+- 프론트: Vercel, 도메인 `kidslog.choseohee.com` (Root Directory `frontend`, DNS는 `kidslog` CNAME → Vercel). 환경변수 `API_URL` = 백엔드 주소.
+- 백엔드: Railway / Cloud Run. `DATABASE_URL`(Neon, `pip install psycopg[binary]`), `JWT_SECRET`, `COOKIE_SECURE=true`, `CORS_ORIGINS=https://kidslog.choseohee.com`, `STORAGE_BACKEND=r2` + R2 키, `ANTHROPIC_API_KEY`.
+- R2 버킷은 비공개로 두고, 브라우저 직접 업로드를 위해 버킷 CORS에 `https://kidslog.choseohee.com`의 `PUT`(헤더 `Content-Type`)과 `GET`을 허용.
+- 자세한 순서와 주의점은 계획서 6장 "배포와 도메인" 참고.
 - 스키마는 시작 시 `create_all`로 만든다. 운영 DB에서 스키마를 바꿀 때는 Alembic 도입 필요.
 - 분석은 FastAPI BackgroundTasks로 돈다. 서버가 재시작되면 진행 중이던 사진은 "분석 중"에 남을 수 있으니 부하가 커지면 RQ/Arq 큐로 옮긴다.
 

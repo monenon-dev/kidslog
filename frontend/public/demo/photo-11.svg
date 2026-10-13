@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+<!-- KidsLog 데모 플레이스홀더 #11 (음악·율동, normal) — 실제 사진 아님 -->
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#EEE4F8"/><stop offset="1" stop-color="#ffffff"/></linearGradient>
+  
+</defs>
+<rect width="800" height="600" fill="url(#bg)"/>
+<g>
+  <g transform="translate(640.7454561042524 283.3254458161866) scale(0.862445987654321)" fill="#B48EDB"><ellipse cx="0" cy="0" rx="26" ry="19" transform="rotate(-20)"/><rect x="20" y="-110" width="8" height="110"/><path d="M28 -110 q 40 20 30 60 q -5 -30 -30 -35z"/></g>
+  <g transform="translate(221.48799725651577 412.656207133059) scale(0.9168981481481482)" fill="#7D55B8"><ellipse cx="0" cy="0" rx="26" ry="19" transform="rotate(-20)"/><rect x="20" y="-110" width="8" height="110"/><path d="M28 -110 q 40 20 30 60 q -5 -30 -30 -35z"/></g>
+  <g transform="translate(283.0175754458162 424.6721536351166) scale(1.0032947530864198)" fill="#F28FB1"><ellipse cx="0" cy="0" rx="26" ry="19" transform="rotate(-20)"/><rect x="20" y="-110" width="8" height="110"/><path d="M28 -110 q 40 20 30 60 q -5 -30 -30 -35z"/></g>
+  <g transform="translate(463.66752400548694 436.03995198902606) scale(1.3716358024691357)" fill="#B48EDB"><ellipse cx="0" cy="0" rx="26" ry="19" transform="rotate(-20)"/><rect x="20" y="-110" width="8" height="110"/><path d="M28 -110 q 40 20 30 60 q -5 -30 -30 -35z"/></g>
+  <g transform="translate(401.77117626886144 283.42626886145405) scale(1.0719212962962963)" fill="#7D55B8"><ellipse cx="0" cy="0" rx="26" ry="19" transform="rotate(-20)"/><rect x="20" y="-110" width="8" height="110"/><path d="M28 -110 q 40 20 30 60 q -5 -30 -30 -35z"/></g>
+  <path d="M0 132.23079561042525 C 200 60, 400 220, 800 100" stroke="#F28FB1" stroke-width="14" fill="none" opacity="0.7"/>
+</g>
+
+<text x="28" y="572" font-family="sans-serif" font-size="26" font-weight="700" fill="#00000055">DEMO · 음악·율동</text>
+</svg>

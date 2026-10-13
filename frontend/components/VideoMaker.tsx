@@ -4,6 +4,7 @@ import type { FFmpeg } from "@ffmpeg/ffmpeg";
 import { ArrowDown, ArrowUp, Bookmark, Check, Clapperboard, CloudCheck, CloudOff, FileVideo, HardDrive, Move, Music, Pause, PenLine, Play, RotateCcw, Send, Sparkles, TriangleAlert, Undo2, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/lib/api";
+import { DEMO } from "@/lib/demo/flag";
 import type { Klass, SubtitleDraft, VideoDraft, VideoDraftClip, VideoDraftData, VideoEditResult, VideoRecord } from "@/lib/types";
 import {
   FFMPEG_CORE,
@@ -813,8 +814,8 @@ export function VideoMaker({ klass }: { klass: Klass | null }) {
       setStoreFailed(!kept);
       if (!kept) reportClientIssue("storage_full", window.location.pathname + window.location.search);
 
-      // 5) 성능 기록 (영상 파일은 올리지 않고 숫자만, 반에서 만든 영상만)
-      const rec = classId === null ? null : await api<VideoRecord>("/videos", {
+      // 5) 성능 기록 (영상 파일은 올리지 않고 숫자만, 반에서 만든 영상만. 데모는 기록하지 않음)
+      const rec = classId === null || DEMO ? null : await api<VideoRecord>("/videos", {
         method: "POST",
         json: {
           class_id: classId,

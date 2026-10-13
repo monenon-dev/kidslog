@@ -2,6 +2,8 @@
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { api, refreshAccess, setAccessToken } from "@/lib/api";
+import { DEMO_USER } from "@/lib/demo/data";
+import { DEMO } from "@/lib/demo/flag";
 import type { User } from "@/lib/types";
 
 type AuthState = {
@@ -19,10 +21,12 @@ const AuthContext = createContext<AuthState | null>(null);
 type TokenOut = { access_token: string; user: User };
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  // 데모: 고정 사용자로 바로 로그인된 상태 (서버에 묻지 않음)
+  const [user, setUser] = useState<User | null>(DEMO ? DEMO_USER : null);
+  const [loading, setLoading] = useState(!DEMO);
 
   useEffect(() => {
+    if (DEMO) return;
     (async () => {
       if (await refreshAccess()) {
         try {
@@ -39,14 +43,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const login = useCallback(async (email: string, password: string) => {
+    if (DEMO) return;
     accept(await api<TokenOut>("/auth/login", { method: "POST", json: { email, password } }));
   }, []);
 
   const signup = useCallback(async (email: string, password: string, name: string) => {
+    if (DEMO) return;
     accept(await api<TokenOut>("/auth/signup", { method: "POST", json: { email, password, name } }));
   }, []);
 
   const logout = useCallback(async () => {
+    if (DEMO) return;
     await api("/auth/logout", { method: "POST" }).catch(() => {});
     setAccessToken(null);
     setUser(null);

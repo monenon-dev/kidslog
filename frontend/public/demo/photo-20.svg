@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+<!-- KidsLog 데모 플레이스홀더 #20 (책읽기, normal) — 실제 사진 아님 -->
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FBE3E4"/><stop offset="1" stop-color="#ffffff"/></linearGradient>
+  
+</defs>
+<rect width="800" height="600" fill="url(#bg)"/>
+<g>
+  <rect x="90" y="131.38074417009602" width="40" height="197.44110082304528" rx="6" fill="#E57F84"/>
+  <rect x="138" y="111.96502057613169" width="40" height="214.66692386831275" rx="6" fill="#B8545B"/>
+  <rect x="186" y="126.44847393689986" width="40" height="227.38657407407408" rx="6" fill="#5B8DEF"/>
+  <rect x="234" y="114.33727709190673" width="40" height="171.8963477366255" rx="6" fill="#F7C948"/>
+  <rect x="282" y="118.84130658436214" width="40" height="222.27031893004116" rx="6" fill="#E57F84"/>
+  <rect x="330" y="159.09636488340192" width="40" height="177.0270061728395" rx="6" fill="#B8545B"/>
+  <rect x="378" y="135.71973593964336" width="40" height="205.7960390946502" rx="6" fill="#5B8DEF"/>
+  <path d="M420 430 q 90 -50 180 0 v-180 q -90 -50 -180 0z" fill="#fff" stroke="#B8545B" stroke-width="8"/>
+  <path d="M600 430 q 90 -50 160 0 v-180 q -70 -50 -160 0z" fill="#fff" stroke="#B8545B" stroke-width="8"/>
+</g>
+
+<text x="28" y="572" font-family="sans-serif" font-size="26" font-weight="700" fill="#00000055">DEMO · 책읽기</text>
+</svg>
