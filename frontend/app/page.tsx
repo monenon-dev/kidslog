@@ -101,10 +101,11 @@ export default function Home() {
           <div className="ml-auto flex items-center gap-2 text-sm">
             {DEMO ? (
               <>
-                <a href={REPO_URL} target="_blank" rel="noreferrer" className="btn-ghost">
-                  <GitBranch size={16} /> GitHub
+                {/* 좁은 화면에서는 GitHub 글자를 숨겨 버튼이 두 줄로 깨지지 않게 */}
+                <a href={REPO_URL} target="_blank" rel="noreferrer" className="btn-ghost" aria-label="GitHub">
+                  <GitBranch size={16} /> <span className="hidden sm:inline">GitHub</span>
                 </a>
-                <Link href="/classes" className="btn-primary">
+                <Link href="/classes" className="btn-primary whitespace-nowrap">
                   데모 둘러보기
                 </Link>
               </>
