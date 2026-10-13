@@ -13,5 +13,5 @@
   <circle cx="480.3377914951989" cy="453.60725308641975" r="23.003446502057614" fill="#8FD3F4" stroke="#fff" stroke-width="6"/>
 </g>
 
-<text x="28" y="572" font-family="sans-serif" font-size="26" font-weight="700" fill="#00000055">DEMO · 바깥놀이</text>
+<text x="400" y="520" text-anchor="middle" font-family="sans-serif" font-size="26" font-weight="700" fill="#00000055">DEMO · 바깥놀이</text>
 </svg>

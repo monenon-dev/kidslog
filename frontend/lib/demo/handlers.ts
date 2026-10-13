@@ -39,7 +39,7 @@ const ids = {
   notification: 100,
 };
 
-const nowIso = () => new Date().toISOString();
+const nowIso = () => seed.localIso();
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 function fail(status: number, message: string): never {

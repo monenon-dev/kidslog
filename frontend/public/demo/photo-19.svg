@@ -17,5 +17,5 @@
   <path d="M600 430 q 90 -50 160 0 v-180 q -70 -50 -160 0z" fill="#fff" stroke="#B8545B" stroke-width="8"/>
 </g>
 
-<text x="28" y="572" font-family="sans-serif" font-size="26" font-weight="700" fill="#00000055">DEMO · 책읽기</text>
+<text x="400" y="520" text-anchor="middle" font-family="sans-serif" font-size="26" font-weight="700" fill="#00000055">DEMO · 책읽기</text>
 </svg>

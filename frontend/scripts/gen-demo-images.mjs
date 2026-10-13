@@ -95,7 +95,7 @@ function svg(n, activity, variant) {
   ${body}
 </g>
 ${variant === "dark" ? `<rect width="${W}" height="${H}" fill="#000" opacity="0.55"/>` : ""}
-<text x="28" y="${H - 28}" font-family="sans-serif" font-size="26" font-weight="700" fill="#00000055">DEMO · ${activity}</text>
+<text x="${W / 2}" y="${H - 80}" text-anchor="middle" font-family="sans-serif" font-size="26" font-weight="700" fill="#00000055">DEMO · ${activity}</text>
 </svg>
 `;
 }

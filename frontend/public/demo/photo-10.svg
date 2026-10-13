@@ -14,5 +14,5 @@
   <path d="M0 110.07265946502058 C 200 60, 400 220, 800 100" stroke="#F28FB1" stroke-width="14" fill="none" opacity="0.7"/>
 </g>
 
-<text x="28" y="572" font-family="sans-serif" font-size="26" font-weight="700" fill="#00000055">DEMO · 음악·율동</text>
+<text x="400" y="520" text-anchor="middle" font-family="sans-serif" font-size="26" font-weight="700" fill="#00000055">DEMO · 음악·율동</text>
 </svg>

@@ -20,11 +20,18 @@ export function isoDaysAgo(n: number): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+/** 시간대 표시 없는 로컬 시각 (샘플과 새로 올린 사진을 같은 기준으로 정렬하도록) */
+export function localIso(d = new Date()): string {
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+
 function at(daysAgo: number, hh: number, mm = 0): string {
   return `${isoDaysAgo(daysAgo)}T${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}:00`;
 }
 
-export const DEMO_USER: User = { id: 1, email: "demo@kidslog.choseohee.com", name: "데모 선생님" };
+// 화면에는 "{이름} 선생님"으로 나오므로 이름은 "데모"
+export const DEMO_USER: User = { id: 1, email: "demo@kidslog.choseohee.com", name: "데모" };
 export const DEMO_USER_CREATED = at(30, 9);
 
 export const CHILDREN: Child[] = [
@@ -59,29 +66,30 @@ type Seed = {
 
 // 순서 = 사진 id = public/demo/photo-NN 번호
 const SEEDS: Seed[] = [
-  // 오늘: 미술 5, 바깥놀이 3 (아직 묶음 없음 → "자동 묶기" 대상)
-  { daysAgo: 0, time: [10, 5], activity: "미술", caption: "책상 위에 물감과 붓이 놓여 있고 종이에 여러 색이 칠해져 있습니다.", extra: [["물감", "object"], ["집중", "mood"]], quality: 86, children: [1, 2] },
-  { daysAgo: 0, time: [10, 8], activity: "미술", caption: "큰 종이에 둥근 무늬를 함께 그리는 장면입니다.", extra: [["도화지", "object"], ["즐거움", "mood"]], quality: 81, children: [3, 4, 5] },
-  { daysAgo: 0, time: [10, 9], activity: "미술", caption: "붓질하는 손이 빠르게 움직여 화면이 흐립니다.", extra: [["흔들림", "quality"]], quality: 32, sharpness: 18 },
-  { daysAgo: 0, time: [10, 15], activity: "미술", caption: "완성한 그림을 들어 보이는 장면입니다.", extra: [["작품", "object"], ["뿌듯함", "mood"]], quality: 88, children: [6, 7] },
-  { daysAgo: 0, time: [10, 15], activity: "미술", caption: "완성한 그림을 들어 보이는 장면입니다.", extra: [["작품", "object"]], quality: 84, duplicateOf: 4, children: [6, 7] },
-  { daysAgo: 0, time: [11, 20], activity: "바깥놀이", caption: "햇볕이 드는 놀이터 언덕에서 공을 굴리고 있습니다.", extra: [["공", "object"], ["활기", "mood"]], quality: 79, children: [1, 3] },
-  { daysAgo: 0, time: [11, 25], activity: "바깥놀이", caption: "잔디밭에서 줄지어 걷는 장면입니다.", extra: [["잔디", "object"]], quality: 74, children: [2, 4, 5] },
-  { daysAgo: 0, time: [11, 40], activity: "바깥놀이", caption: "그늘이 져서 전체적으로 어둡게 찍혔습니다.", extra: [["어두움", "quality"]], quality: 38, brightness: 22 },
-  // 어제: 음악·율동 4 (묶음 2), 급식 2
-  { daysAgo: 1, time: [9, 50], activity: "음악·율동", caption: "음악에 맞춰 팔을 들고 율동하는 장면입니다.", extra: [["율동", "object"], ["신남", "mood"]], quality: 83, children: [1, 6] },
-  { daysAgo: 1, time: [9, 55], activity: "음악·율동", caption: "둥글게 서서 박자에 맞춰 손뼉을 치고 있습니다.", extra: [["손뼉", "object"], ["눈감음", "quality"]], quality: 72, eyesClosed: true, children: [2, 3, 7] },
-  { daysAgo: 1, time: [10, 0], activity: "음악·율동", caption: "작은 악기를 하나씩 들고 소리를 내 보는 장면입니다.", extra: [["악기", "object"]], quality: 80, children: [4, 5] },
-  { daysAgo: 1, time: [10, 2], activity: "음악·율동", caption: "빠르게 움직이는 순간이라 흔들렸습니다.", extra: [["흔들림", "quality"]], quality: 40, sharpness: 25 },
-  { daysAgo: 1, time: [12, 10], activity: "급식", caption: "식판에 밥과 반찬이 담겨 있습니다.", extra: [["식판", "object"]], quality: 77, children: [1, 2, 3] },
-  { daysAgo: 1, time: [12, 20], activity: "급식", caption: "스스로 숟가락을 들고 먹는 장면입니다.", extra: [["숟가락", "object"], ["편안함", "mood"]], quality: 75, children: [4, 6] },
-  // 그저께: 과학·탐구 4 (묶음 1), 책읽기 2
-  { daysAgo: 2, time: [10, 30], activity: "과학·탐구", caption: "투명한 병 안에 거품이 올라오는 실험 장면입니다.", extra: [["실험", "object"], ["호기심", "mood"]], quality: 87, children: [1, 5] },
-  { daysAgo: 2, time: [10, 35], activity: "과학·탐구", caption: "돋보기로 나뭇잎을 들여다보고 있습니다.", extra: [["돋보기", "object"]], quality: 82, children: [2, 6, 7] },
-  { daysAgo: 2, time: [10, 40], activity: "과학·탐구", caption: "색이 바뀐 물을 비교하는 장면입니다.", extra: [["물", "object"], ["놀람", "mood"]], quality: 78, children: [3, 4] },
-  { daysAgo: 2, time: [10, 50], activity: "과학·탐구", caption: "커튼을 친 교실이라 어둡게 찍혔습니다.", extra: [["어두움", "quality"]], quality: 41, brightness: 25 },
-  { daysAgo: 2, time: [14, 0], activity: "책읽기", caption: "책꽂이 앞에서 그림책을 펼쳐 보고 있습니다.", extra: [["그림책", "object"], ["차분함", "mood"]], quality: 85, children: [1, 7] },
-  { daysAgo: 2, time: [14, 10], activity: "책읽기", caption: "선생님이 읽어 주는 책을 함께 보고 있습니다.", extra: [["그림책", "object"]], quality: 76, teacher: true, children: [2, 5] },
+  // 샘플은 어제부터 (오늘 날짜는 데모에서 올린 사진 몫이라 항상 맨 앞에 보인다)
+  // 어제: 미술 5, 바깥놀이 3 (아직 묶음 없음 → "자동 묶기" 대상)
+  { daysAgo: 1, time: [10, 5], activity: "미술", caption: "책상 위에 물감과 붓이 놓여 있고 종이에 여러 색이 칠해져 있습니다.", extra: [["물감", "object"], ["집중", "mood"]], quality: 86, children: [1, 2] },
+  { daysAgo: 1, time: [10, 8], activity: "미술", caption: "큰 종이에 둥근 무늬를 함께 그리는 장면입니다.", extra: [["도화지", "object"], ["즐거움", "mood"]], quality: 81, children: [3, 4, 5] },
+  { daysAgo: 1, time: [10, 9], activity: "미술", caption: "붓질하는 손이 빠르게 움직여 화면이 흐립니다.", extra: [["흔들림", "quality"]], quality: 32, sharpness: 18 },
+  { daysAgo: 1, time: [10, 15], activity: "미술", caption: "완성한 그림을 들어 보이는 장면입니다.", extra: [["작품", "object"], ["뿌듯함", "mood"]], quality: 88, children: [6, 7] },
+  { daysAgo: 1, time: [10, 15], activity: "미술", caption: "완성한 그림을 들어 보이는 장면입니다.", extra: [["작품", "object"]], quality: 84, duplicateOf: 4, children: [6, 7] },
+  { daysAgo: 1, time: [11, 20], activity: "바깥놀이", caption: "햇볕이 드는 놀이터 언덕에서 공을 굴리고 있습니다.", extra: [["공", "object"], ["활기", "mood"]], quality: 79, children: [1, 3] },
+  { daysAgo: 1, time: [11, 25], activity: "바깥놀이", caption: "잔디밭에서 줄지어 걷는 장면입니다.", extra: [["잔디", "object"]], quality: 74, children: [2, 4, 5] },
+  { daysAgo: 1, time: [11, 40], activity: "바깥놀이", caption: "그늘이 져서 전체적으로 어둡게 찍혔습니다.", extra: [["어두움", "quality"]], quality: 38, brightness: 22 },
+  // 그저께: 음악·율동 4 (묶음 2), 급식 2
+  { daysAgo: 2, time: [9, 50], activity: "음악·율동", caption: "음악에 맞춰 팔을 들고 율동하는 장면입니다.", extra: [["율동", "object"], ["신남", "mood"]], quality: 83, children: [1, 6] },
+  { daysAgo: 2, time: [9, 55], activity: "음악·율동", caption: "둥글게 서서 박자에 맞춰 손뼉을 치고 있습니다.", extra: [["손뼉", "object"], ["눈감음", "quality"]], quality: 72, eyesClosed: true, children: [2, 3, 7] },
+  { daysAgo: 2, time: [10, 0], activity: "음악·율동", caption: "작은 악기를 하나씩 들고 소리를 내 보는 장면입니다.", extra: [["악기", "object"]], quality: 80, children: [4, 5] },
+  { daysAgo: 2, time: [10, 2], activity: "음악·율동", caption: "빠르게 움직이는 순간이라 흔들렸습니다.", extra: [["흔들림", "quality"]], quality: 40, sharpness: 25 },
+  { daysAgo: 2, time: [12, 10], activity: "급식", caption: "식판에 밥과 반찬이 담겨 있습니다.", extra: [["식판", "object"]], quality: 77, children: [1, 2, 3] },
+  { daysAgo: 2, time: [12, 20], activity: "급식", caption: "스스로 숟가락을 들고 먹는 장면입니다.", extra: [["숟가락", "object"], ["편안함", "mood"]], quality: 75, children: [4, 6] },
+  // 사흘 전: 과학·탐구 4 (묶음 1), 책읽기 2
+  { daysAgo: 3, time: [10, 30], activity: "과학·탐구", caption: "투명한 병 안에 거품이 올라오는 실험 장면입니다.", extra: [["실험", "object"], ["호기심", "mood"]], quality: 87, children: [1, 5] },
+  { daysAgo: 3, time: [10, 35], activity: "과학·탐구", caption: "돋보기로 나뭇잎을 들여다보고 있습니다.", extra: [["돋보기", "object"]], quality: 82, children: [2, 6, 7] },
+  { daysAgo: 3, time: [10, 40], activity: "과학·탐구", caption: "색이 바뀐 물을 비교하는 장면입니다.", extra: [["물", "object"], ["놀람", "mood"]], quality: 78, children: [3, 4] },
+  { daysAgo: 3, time: [10, 50], activity: "과학·탐구", caption: "커튼을 친 교실이라 어둡게 찍혔습니다.", extra: [["어두움", "quality"]], quality: 41, brightness: 25 },
+  { daysAgo: 3, time: [14, 0], activity: "책읽기", caption: "책꽂이 앞에서 그림책을 펼쳐 보고 있습니다.", extra: [["그림책", "object"], ["차분함", "mood"]], quality: 85, children: [1, 7] },
+  { daysAgo: 3, time: [14, 10], activity: "책읽기", caption: "선생님이 읽어 주는 책을 함께 보고 있습니다.", extra: [["그림책", "object"]], quality: 76, teacher: true, children: [2, 5] },
 ];
 // 한별(8)은 일부러 태그가 없다 → 아이별 균형에서 "적음"
 
@@ -126,8 +134,8 @@ export const PHOTOS: Photo[] = SEEDS.map(seedToPhoto);
 export type GroupSeed = Omit<Group, "photo_count" | "cover_thumb_url"> & { photo_ids: number[] };
 
 export const GROUPS: GroupSeed[] = [
-  { id: 1, class_id: CLASS_ID, date: isoDaysAgo(2), title: "과학·탐구 — 거품 실험과 돋보기 관찰", activity: "과학·탐구", cover_photo_id: 15, photo_ids: [15, 16, 17, 18] },
-  { id: 2, class_id: CLASS_ID, date: isoDaysAgo(1), title: "음악·율동 — 악기 연주와 손뼉 놀이", activity: "음악·율동", cover_photo_id: 9, photo_ids: [9, 10, 11, 12] },
+  { id: 1, class_id: CLASS_ID, date: isoDaysAgo(3), title: "과학·탐구 — 거품 실험과 돋보기 관찰", activity: "과학·탐구", cover_photo_id: 15, photo_ids: [15, 16, 17, 18] },
+  { id: 2, class_id: CLASS_ID, date: isoDaysAgo(2), title: "음악·율동 — 악기 연주와 손뼉 놀이", activity: "음악·율동", cover_photo_id: 9, photo_ids: [9, 10, 11, 12] },
 ];
 
 export const NOTES: (Note & { group_id: number })[] = [
@@ -141,7 +149,7 @@ export const NOTES: (Note & { group_id: number })[] = [
     subtitles: [],
     tone: "warm",
     edited_by_teacher: false,
-    created_at: at(2, 15, 0),
+    created_at: at(3, 15, 0),
     warnings: [],
   },
   {
@@ -154,7 +162,7 @@ export const NOTES: (Note & { group_id: number })[] = [
     subtitles: [],
     tone: "concise",
     edited_by_teacher: true,
-    created_at: at(1, 16, 0),
+    created_at: at(2, 16, 0),
     warnings: [],
   },
 ];
@@ -209,15 +217,15 @@ export const UPLOAD_RESULTS: { activity: string; caption: string; extra: [string
 ];
 
 export const VIDEOS: VideoRecord[] = [
-  { id: 1, class_id: CLASS_ID, group_id: null, title: "음악·율동 하이라이트", clip_count: 5, input_total_mb: 84.2, output_seconds: 62.5, processing_ms: 48_300, resolution: "1280x720", user_agent: "Demo (Windows; Chrome)", created_at: at(1, 17, 5) },
-  { id: 2, class_id: CLASS_ID, group_id: null, title: "거품 실험 모음", clip_count: 4, input_total_mb: 61.7, output_seconds: 48.0, processing_ms: 39_800, resolution: "1280x720", user_agent: "Demo (Android; Chrome)", created_at: at(2, 16, 40) },
-  { id: 3, class_id: CLASS_ID, group_id: null, title: "지난주 바깥놀이", clip_count: 6, input_total_mb: 102.9, output_seconds: 75.0, processing_ms: 66_100, resolution: "1280x720", user_agent: "Demo (macOS; Safari)", created_at: at(7, 15, 20) },
+  { id: 3, class_id: CLASS_ID, group_id: null, title: "음악·율동 하이라이트", clip_count: 5, input_total_mb: 84.2, output_seconds: 62.5, processing_ms: 48_300, resolution: "1280x720", user_agent: "Demo (Windows; Chrome)", created_at: at(2, 17, 5) },
+  { id: 2, class_id: CLASS_ID, group_id: null, title: "거품 실험 모음", clip_count: 4, input_total_mb: 61.7, output_seconds: 48.0, processing_ms: 39_800, resolution: "1280x720", user_agent: "Demo (Android; Chrome)", created_at: at(3, 16, 40) },
+  { id: 1, class_id: CLASS_ID, group_id: null, title: "지난주 바깥놀이", clip_count: 6, input_total_mb: 102.9, output_seconds: 75.0, processing_ms: 66_100, resolution: "1280x720", user_agent: "Demo (macOS; Safari)", created_at: at(7, 15, 20) },
 ];
 
 export type DemoNotification = { id: number; kind: string; title: string; body: string; link: string; created_at: string; read: boolean };
 
 export const NOTIFICATIONS: DemoNotification[] = [
-  { id: 1, kind: "low_photos", title: "사진이 적은 아이가 있어요", body: "연꽃반 한별 — 최근 7일 사진 0장", link: `/classes/${CLASS_ID}?tab=balance`, created_at: at(0, 12, 0), read: false },
-  { id: 2, kind: "analysis", title: "사진 분석이 끝났어요", body: "연꽃반 사진 8장 분석 완료 (확인 필요 2장)", link: `/classes/${CLASS_ID}?tab=gallery`, created_at: at(0, 11, 45), read: false },
+  { id: 1, kind: "low_photos", title: "사진이 적은 아이가 있어요", body: "연꽃반 한별 — 최근 7일 사진 0장", link: `/classes/${CLASS_ID}?tab=balance`, created_at: at(1, 12, 0), read: false },
+  { id: 2, kind: "analysis", title: "사진 분석이 끝났어요", body: "연꽃반 사진 8장 분석 완료 (확인 필요 2장)", link: `/classes/${CLASS_ID}?tab=gallery`, created_at: at(1, 11, 45), read: false },
   { id: 3, kind: "ai_limit", title: "오늘 AI 사용량 80%", body: "하루 상한 300회 중 240회를 썼어요. (데모 예시)", link: "/settings", created_at: at(1, 18, 0), read: true },
 ];
